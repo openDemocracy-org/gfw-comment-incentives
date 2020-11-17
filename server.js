@@ -18,8 +18,8 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
-function addToFile(message) {
-    fs.appendFile('public/events.json', message, (err) => {
+function addToFile(story, message) {
+    fs.appendFile(`public/${story}.json`, message, (err) => {
         if (err) throw err;
     });
 }
@@ -35,7 +35,7 @@ function extractBody(body, sig) {
         .filter(([prefix]) => prefix === "sha256")
         // Grab the value from the prefix and value pair.
         .map(([, value]) => value);
-    addToFile(JSON.stringify(signatures))
+
     // Step 2: Prepare the `signed_payload`.
     const signed_payload = body;
 
@@ -75,18 +75,15 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
     //     return res.status(400).send(`Webhook Error: ${err.message}`);
     // }
 
-    addToFile(JSON.stringify(req.body))
+    addToFile('story-three', JSON.stringify(req.body))
 
     // Return a response to acknowledge receipt of the event
     res.json({ received: true });
 });
 
-app.post('/create-story', (req,res) => {
-    addToFile(req.body.data.storyURL)
-    fs.appendFile(`public/${req.body.data.storyURL}.json`, '[]', (err) => {
-        if (err) {
-            addToFile('error starting story')
-        };
+app.post('/create-story', (req, res) => {
+    fs.appendFile(`public/${req.body.data.storyURL.split('=')[1]}.json`, '[]', (err) => {
+        if (err) console.log(err)
 
         res.send('Created story');
     });
