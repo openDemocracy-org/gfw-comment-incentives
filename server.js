@@ -80,7 +80,7 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
     //     return res.status(400).send(`Webhook Error: ${err.message}`);
     // }
 
-    addToFile(req.body.toString())
+    addToFile(JSON.stringify(req.body))
 
     // Return a response to acknowledge receipt of the event
     res.json({ received: true });
