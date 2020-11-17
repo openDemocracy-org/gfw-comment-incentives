@@ -78,7 +78,7 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
 
 app.get('/highlight-comment', (req, res) => {
 
-    fs.appendFile('public/logs.txt', JSON.stringify(req.body), (err) => {
+    fs.appendFile('public/events.txt', JSON.stringify(req.body), (err) => {
         if (err) throw err;
         res.send('Created logs');
     });
