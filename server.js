@@ -81,6 +81,15 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
     res.json({ received: true });
 });
 
+app.post('/create-story', (req,res) => {
+    addToFile(req.body.data.storyURL)
+    fs.appendFile(`public/${req.body.data.storyURL}.json`, '[]', (err) => {
+        if (err) throw err;
+
+        res.send('Created story');
+    });
+})
+
 app.get('/highlight-comment', (req, res) => {
 
     fs.appendFile('public/events.json', JSON.stringify(req.body), (err) => {
