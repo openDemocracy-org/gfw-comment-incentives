@@ -73,16 +73,14 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
 
     let body;
 
-    try {
-        // Parse the JSON for the event.
-        body = extractBody(req.body, sig);
-    } catch (err) {
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+    // try {
+    //     // Parse the JSON for the event.
+    //     body = extractBody(req.body, sig);
+    // } catch (err) {
+    //     return res.status(400).send(`Webhook Error: ${err.message}`);
+    // }
 
-    fs.appendFile('public/events.txt', JSON.stringify(body), (err) => {
-        if (err) throw err;
-    });
+    addToFile(req.body.toString())
 
     // Return a response to acknowledge receipt of the event
     res.json({ received: true });
