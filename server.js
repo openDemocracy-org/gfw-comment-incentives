@@ -36,7 +36,7 @@ function extractBody(body, sig) {
         .filter(([prefix]) => prefix === "sha256")
         // Grab the value from the prefix and value pair.
         .map(([, value]) => value);
-
+    addToFile(JSON.stringify(signatures))
     // Step 2: Prepare the `signed_payload`.
     const signed_payload = body;
 
