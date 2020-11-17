@@ -20,27 +20,27 @@ app.use(bodyParser.json())
 
 function addToFile(story, message) {
 
+
     fs.readFile(`public/${story}.json`, 'utf-8', (err, data) => {
+
         if (err) {
-            throw err;
+            console.log(`Error reading file from disk: ${err}`);
+        } else {
+
+            // parse JSON string to JSON object
+            const contents = JSON.parse(data);
+
+            // add a new record
+            contents.push(JSON.parse(message));
+
+            // write new data back to the file
+            fs.writeFile(`public/${story}.json`, JSON.stringify(contents, null, 4), (err) => {
+                if (err) {
+                    console.log(`Error writing file: ${err}`);
+                }
+            });
         }
 
-        // parse JSON object
-        const details = JSON.parse(data.toString());
-
-        details.push(message)
-
-        const updated = JSON.stringify(details);
-        // write JSON string to a file
-        fs.writeFile(`public/${story}.json`, data, (err) => {
-            if (err) {
-                throw err;
-            }
-            console.log("JSON data is saved.");
-        });
-
-        // print JSON object
-        console.log(user);
     });
 
 }
@@ -96,7 +96,7 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
     //     return res.status(400).send(`Webhook Error: ${err.message}`);
     // }
 
-    addToFile('story-four', req.body)
+    addToFile('story-three', JSON.stringify(req.body))
 
     // Return a response to acknowledge receipt of the event
     res.json({ received: true });
