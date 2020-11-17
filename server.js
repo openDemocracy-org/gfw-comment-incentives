@@ -18,7 +18,14 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
+function addToFile(message) {
+    fs.appendFile('public/events.txt',message, (err) => {
+        if (err) throw err;
+    });
+}
+
 function extractBody(body, sig) {
+    addToFile('extracting body')
     // Step 1: Extract signatures from the header.
     const signatures = sig
         // Split the header by `,` to get a list of elements.
@@ -49,6 +56,7 @@ function extractBody(body, sig) {
             crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
         )
     ) {
+
         throw new Error("Invalid signature");
     }
 
@@ -57,6 +65,10 @@ function extractBody(body, sig) {
 }
 
 app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (req, res) => {
+
+
+    addToFile('webhook triggered!')
+    
     const sig = req.headers["x-coral-signature"];
 
     let body;
