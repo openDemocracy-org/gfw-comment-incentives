@@ -56,10 +56,10 @@ function extractBody(body, sig) {
             crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
         )
     ) {
-
+        addToFile('invalid signature')
         throw new Error("Invalid signature");
     }
-
+    addToFile('successful signature')
     // Parse the JSON for the event.
     return JSON.parse(body.toString());
 }
@@ -68,7 +68,7 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
 
 
     addToFile('webhook triggered!')
-    
+
     const sig = req.headers["x-coral-signature"];
 
     let body;
