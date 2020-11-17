@@ -41,12 +41,12 @@ function extractBody(body, sig) {
     const signed_payload = body;
 
     // Step 3: Calculate the expected signature.
-    const expected = crypto
-        .createHmac("sha256", SIGNING_SECRET)
-        .update(signed_payload)
-        .digest()
-        .toString("hex");
-    addToFile('expected: ' + JSON.stringify(expected))
+    // const expected = crypto
+    //     .createHmac("sha256", SIGNING_SECRET)
+    //     .update(signed_payload)
+    //     .digest()
+    //     .toString("hex");
+    // addToFile('expected: ' + JSON.stringify(expected))
     // Step 4: Compare signatures.
     // if (
     //     // For each of the signatures on the request...
