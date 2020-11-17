@@ -19,13 +19,12 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 function addToFile(message) {
-    fs.appendFile('public/events.txt',message, (err) => {
+    fs.appendFile('public/events.json', message, (err) => {
         if (err) throw err;
     });
 }
 
 function extractBody(body, sig) {
-    addToFile('extracting body')
     // Step 1: Extract signatures from the header.
     const signatures = sig
         // Split the header by `,` to get a list of elements.
@@ -59,15 +58,11 @@ function extractBody(body, sig) {
     //     addToFile('invalid signature')
     //     throw new Error("Invalid signature");
     // }
-    addToFile('successful signature')
     // Parse the JSON for the event.
     return JSON.parse(body.toString());
 }
 
 app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (req, res) => {
-
-
-    addToFile('webhook triggered!')
 
     const sig = req.headers["x-coral-signature"];
 
@@ -88,7 +83,7 @@ app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (re
 
 app.get('/highlight-comment', (req, res) => {
 
-    fs.appendFile('public/events.txt', JSON.stringify(req.body), (err) => {
+    fs.appendFile('public/events.json', JSON.stringify(req.body), (err) => {
         if (err) throw err;
         res.send('Created logs');
     });
