@@ -202,7 +202,7 @@ function beginCommenterFlow() {
 
 function commenterFlowGetWallet() {
   let newContents = {
-    para: `Great :)<br/><br/>
+    para: `Great :)<br/>
     Please enter your wallet address below:<br/>
     <input type="text" name="wallet" /><br/>   
     `,
@@ -220,6 +220,7 @@ function commenterFlowGetWallet() {
   gfwUpdateContents(newContents)
 }
 
+
 function commenterFlowSubmitWallet() {
   let newContents = {
     para: `Excellent :)<br/>
@@ -235,7 +236,6 @@ function commenterFlowSubmitWallet() {
 
 
 async function pollForSavedWallet() {
-
   try {
     let wresponse = await fetch('{{externalServiceRootUrl}}/data/wallets.json');
 
@@ -252,8 +252,6 @@ async function pollForSavedWallet() {
     clearInterval(walletCheckInterval)
     console.log(e)
   }
-  
-
 }
 
 

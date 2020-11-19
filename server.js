@@ -21,7 +21,6 @@ app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.raw({ type: "application/json" }))
 
-
 // START Templating code just for POC
 const slashes = require("connect-slashes");
 function createHash(str) {
@@ -43,21 +42,17 @@ app.get('/articles/*', slashes(), function (req, res) {
         tabTitle: `${req.originalUrl} - od`,
         pageSlugHash: pageSlugHash,
         pageTitle: `An oD article with page slug ${req.originalUrl}`,
-        pageFullUrl: pageFullUrl,
+        pageFullUrl: pageFullUrl.includes('https://localhost') ? process.env.PAGE_ROOT_URL + req.originalUrl : pageFullUrl,
         pageRootUrl: process.env.PAGE_ROOT_URL,
         coralRootUrl: process.env.CORAL_ROOT_URL
     });
 });
 
-app.get('/assets/client.js', function(req,res){
+app.get('/assets/client.js', function (req, res) {
     res.render('client.js', {
         externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
     });
 })
-
-
-
-
 
 function addToFile(fileName, message) {
     fs.readFile(`public/data/${fileName}.json`, 'utf-8', (err, data) => {
@@ -160,7 +155,7 @@ app.post("/highlight-comment", (req, res) => {
         addToFile(storySlug, JSON.stringify(req.body))
         res.json({ received: true });
     }
-    
+
 });
 
 app.post('/create-story', (req, res) => {
