@@ -48,7 +48,7 @@ app.get('/articles/*', slashes(), function (req, res) {
         pageTitle: `An oD article with page slug ${req.originalUrl}`,
         pageFullUrl: pageFullUrl,
         pageRootUrl: 'https://comment-incentives.staging-caprover.opendemocracy.net',
-        coralRootUrl: 'https://coral-talk-talk.staging-caprover.opendemocracy.net'
+        coralRootUrl: 'https://coral-talk.staging-caprover.opendemocracy.net'
     });
 });
 
