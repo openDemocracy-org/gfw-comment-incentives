@@ -39,7 +39,7 @@ function createHash(str) {
 }
 
 app.get('/articles/*', slashes(), function (req, res) {
-    const pageFullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    const pageFullUrl = 'https://' + req.get('host') + req.originalUrl;
     let pageSlugHash = createHash(req.originalUrl);
     pageSlugHash = pageSlugHash < 0 ? pageSlugHash * -1 : pageSlugHash;
     res.render('coral.html', {
