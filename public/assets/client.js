@@ -237,7 +237,7 @@ function commenterFlowSubmitWallet() {
 async function pollForSavedWallet() {
 
   try {
-    let wresponse = await fetch('https://comment-incentives.staging-caprover.opendemocracy.net/data/wallets.json');
+    let wresponse = await fetch('https://comment-service.staging-caprover.opendemocracy.net/data/wallets.json');
 
     if (wresponse.ok) { // if HTTP-status is 200-299
       // get the response body (the method explained below)
