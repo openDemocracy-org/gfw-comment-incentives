@@ -1,5 +1,6 @@
 'use strict';
 
+const cors = require('cors')
 const express = require('express');
 const bodyParser = require('body-parser')
 const fs = require('fs');
@@ -12,100 +13,126 @@ const HOST = '0.0.0.0';
 // App
 const app = express();
 
-// parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
-
-// parse application/json
+app.use(cors())
 app.use(bodyParser.json())
+app.use(bodyParser.raw({ type: "application/json" }))
 
-function addToFile(story, message) {
-
-
-    fs.readFile(`public/${story}.json`, 'utf-8', (err, data) => {
-
+function addToFile(fileName, message) {
+    fs.readFile(`public/${fileName}.json`, 'utf-8', (err, data) => {
         if (err) {
             console.log(`Error reading file from disk: ${err}`);
         } else {
-
             // parse JSON string to JSON object
             const contents = JSON.parse(data);
-
             // add a new record
             contents.push(JSON.parse(message));
-
             // write new data back to the file
-            fs.writeFile(`public/${story}.json`, JSON.stringify(contents, null, 4), (err) => {
+            fs.writeFile(`public/${fileName}.json`, JSON.stringify(contents, null, 4), (err) => {
                 if (err) {
                     console.log(`Error writing file: ${err}`);
                 }
             });
         }
-
     });
-
 }
 
-function extractBody(body, sig) {
-    // Step 1: Extract signatures from the header.
-    const signatures = sig
-        // Split the header by `,` to get a list of elements.
-        .split(",")
-        // Split each element by `=` to get a prefix and value pair.
-        .map(element => element.split("="))
-        // Grab all the elements with the prefix of `sha256`.
-        .filter(([prefix]) => prefix === "sha256")
-        // Grab the value from the prefix and value pair.
-        .map(([, value]) => value);
+function handleHighlightedComment(comment, sentDetails) {
+    const highlightedCommentCandidate = {
+        author_id: comment.author.id,
+        commenter_id: sentDetails.commenter_id
+    }
+    let storyUrl = getStoryUrlFromComment(comment)
+    let storySlug = getSlugFromUrl(storyUrl)
+    fs.readFile(`public/${storySlug}.json`, 'utf-8', (err, data) => {
+        if (err) {
+            console.log(`Error reading file from disk: ${err}`);
+        } else {
+            // parse JSON string to JSON object
+            const contents = JSON.parse(data);
 
-    // Step 2: Prepare the `signed_payload`.
-    const signed_payload = body;
+            const chosenComment = contents.filter(comment => comment.comment.body.includes(sentDetails.commenter_comment))
+            highlightedCommentCandidate.chosen_comment = chosenComment
 
-    // Step 3: Calculate the expected signature.
-    // const expected = crypto
-    //     .createHmac("sha256", SIGNING_SECRET)
-    //     .update(signed_payload)
-    //     .digest()
-    //     .toString("hex");
-    // addToFile('expected: ' + JSON.stringify(expected))
-    // Step 4: Compare signatures.
-    // if (
-    //     // For each of the signatures on the request...
-    //     !signatures.some(signature =>
-    //         // Compare the expected signature to the signature on in the header. If at
-    //         // least one of the match, we should continue to process the event.
-    //         crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
-    //     )
-    // ) {
-    //     addToFile('invalid signature')
-    //     throw new Error("Invalid signature");
-    // }
-    // Parse the JSON for the event.
-    return JSON.parse(body.toString());
+            fs.writeFile(`public/${storySlug}-chosen.json`, JSON.stringify(highlightedCommentCandidate, null, 4), (err) => {
+                if (err) {
+                    console.log(`Error writing file: ${err}`);
+                }
+            });
+        }
+    });
 }
 
-app.post("/highlight-comment", bodyParser.raw({ type: "application/json" }), (req, res) => {
+function handleCommenterWallet(comment, sentDetails) {
+    fs.readFile(`public/wallets.json`, 'utf-8', (err, data) => {
+        if (err) {
+            console.log(`Error reading file from disk: ${err}`);
+        } else {
+            // parse JSON string to JSON object
+            const contents = JSON.parse(data);
+            contents[sentDetails.commenter_wallet] = comment.author.id;
 
-    const sig = req.headers["x-coral-signature"];
 
-    let body;
+            fs.writeFile(`public/wallets.json`, JSON.stringify(contents, null, 4), (err) => {
+                if (err) {
+                    console.log(`Error writing file: ${err}`);
+                }
+            });
+        }
+    });
+}
 
-    // try {
-    //     // Parse the JSON for the event.
-    //     body = extractBody(req.body, sig);
-    // } catch (err) {
-    //     return res.status(400).send(`Webhook Error: ${err.message}`);
-    // }
 
-    addToFile('story-nine', JSON.stringify(req.body))
 
-    // Return a response to acknowledge receipt of the event
+function getStoryUrlFromRequest(reqBody) {
+    return reqBody.data ? reqBody.data.storyURL : reqBody.storyURL
+}
+
+function getStoryUrlFromComment(reqBody) {
+    return reqBody.story.url
+}
+
+function getSlugFromUrl(urlString) {
+    let slug;
+    if (urlString.includes('localhost')) {
+        slug = urlString.split('=')[1]
+    } else {
+        let urlParts = urlString.split('/')
+        slug = urlParts[urlParts.length - 1]
+    }
+    return slug
+}
+
+app.post("/highlight-comment", (req, res) => {
+    let storyUrl = getStoryUrlFromComment(req.body)
+    let storySlug = getSlugFromUrl(storyUrl)
+    try {
+        let body = req.body.comment.body
+        let b1 = body.split('<div>')[1]
+        let b2 = b1.split('</div>')[0]
+        let sentJson = JSON.parse(b2)
+        if (sentJson.commenter_comment) {
+            handleHighlightedComment(req.body, sentJson)
+        }
+        if (sentJson.commenter_wallet) {
+            handleCommenterWallet(req.body, sentJson)
+        }
+    } catch (e) {
+        console.log('This comment is a normal comment')
+        addToFile(storySlug, JSON.stringify(req.body))
+    }
     res.json({ received: true });
 });
 
 app.post('/create-story', (req, res) => {
-    fs.appendFile(`public/${req.body.data.storyURL.split('=')[1]}.json`, '[]', (err) => {
+    let storyUrl = getStoryUrlFromRequest(req.body);
+    console.log(storyUrl)
+    let storySlug = getSlugFromUrl(storyUrl);
+    console.log(storySlug)
+    fs.appendFile(`public/${storySlug}.json`, '[]', (err) => {
         if (err) console.log(err)
-
+    });
+    fs.appendFile(`public/${storySlug}-chosen.json`, '', (err) => {
+        if (err) console.log(err)
         res.send('Created story');
     });
 })
