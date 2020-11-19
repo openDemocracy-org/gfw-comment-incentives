@@ -235,18 +235,25 @@ function commenterFlowSubmitWallet() {
 
 
 async function pollForSavedWallet() {
-  let wresponse = await fetch('https://comment-incentives.staging-caprover.opendemocracy.net/wallets.json');
 
-  if (wresponse.ok) { // if HTTP-status is 200-299
-    // get the response body (the method explained below)
-    let wallets = await wresponse.json();
-    if (wallets[wallet]) {
-      clearInterval(walletCheckInterval)
-      commenterFlowHandleWalletSuccess()
-    }
-  } else {
-    alert("HTTP-Error: " + response.status);
+  try {
+    let wresponse = await fetch('https://comment-incentives.staging-caprover.opendemocracy.net/data/wallets.json');
+
+    if (wresponse.ok) { // if HTTP-status is 200-299
+      // get the response body (the method explained below)
+      let wallets = await wresponse.json();
+
+      if (wallets[wallet]) {
+        clearInterval(walletCheckInterval)
+        commenterFlowHandleWalletSuccess()
+      }
+    }  
+  } catch(e) {
+    clearInterval(walletCheckInterval)
+    console.log(e)
   }
+  
+
 }
 
 
@@ -263,3 +270,4 @@ function commenterFlowHandleWalletSuccess() {
 }
 
 
+insertContent()
