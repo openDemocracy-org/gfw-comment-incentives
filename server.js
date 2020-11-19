@@ -7,7 +7,7 @@ const fs = require('fs');
 const SIGNING_SECRET = "empsec_fa0e94fca0c13666c96f01c09b3c3b4673e1bd37289d848411519f3c5f46eb81f610d0";
 const crypto = require("crypto");
 // Constants
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const HOST = '0.0.0.0';
 // App
 const app = express();
