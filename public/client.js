@@ -142,6 +142,7 @@ function insertContent() {
   !gfwStlyesInserted && insertStyles()
   let node = document.createElement('div')
   node.setAttribute('id', 'gfw-root')
+  gfwPanelVisible = true;
   let contentRoot = body.appendChild(node)
   contentRoot.innerHTML = template(contents)
   updateEventHandlers(contents)
