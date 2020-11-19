@@ -1,5 +1,5 @@
 'use strict';
-
+require('dotenv').config()
 const cors = require('cors')
 const express = require('express');
 const bodyParser = require('body-parser')
@@ -11,7 +11,11 @@ const PORT = process.env.PORT || 8080;
 const HOST = '0.0.0.0';
 // App
 const app = express();
-
+const nunjucks = require('nunjucks');
+nunjucks.configure('views', {
+    autoescape: false,
+    express: app
+});
 
 app.use(cors())
 app.use(bodyParser.json())
@@ -20,13 +24,6 @@ app.use(bodyParser.raw({ type: "application/json" }))
 
 // START Templating code just for POC
 const slashes = require("connect-slashes");
-
-const nunjucks = require('nunjucks');
-nunjucks.configure('views', {
-    autoescape: true,
-    express: app
-});
-
 function createHash(str) {
     var hash = 0;
     if (str.length == 0) return hash;
@@ -47,10 +44,16 @@ app.get('/articles/*', slashes(), function (req, res) {
         pageSlugHash: pageSlugHash,
         pageTitle: `An oD article with page slug ${req.originalUrl}`,
         pageFullUrl: pageFullUrl,
-        pageRootUrl: 'https://comment-service.staging-caprover.opendemocracy.net',
-        coralRootUrl: 'https://coral-talk.staging-caprover.opendemocracy.net'
+        pageRootUrl: process.env.PAGE_ROOT_URL,
+        coralRootUrl: process.env.CORAL_ROOT_URL
     });
 });
+
+app.get('/assets/client.js', function(req,res){
+    res.render('client.js', {
+        externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
+    });
+})
 
 
 
