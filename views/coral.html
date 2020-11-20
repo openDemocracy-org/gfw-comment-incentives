@@ -15,14 +15,14 @@
                 events: function (events) {
                     events.onAny(function (eventName, data) {
                         console.log(eventName, data);
-                        if (gfwPanelVisible) {
-                            gfwUpdateContents({
-                                output: eventName + ' ' + JSON.stringify(data)
-                            })
-                        }
+
 
                         if (eventName === 'signedIn' && gfwCommentsActive) {
                             gfwGotSignedInUser();
+                        }
+
+                        if (eventName === 'signOut.success') {
+                            gfwGotSignedOutUser();
                         }
 
                         if (eventName === 'createComment.success') {

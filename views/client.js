@@ -1,45 +1,14 @@
+// Global variables
+
 const gfwCommentsActive = true;
 let gfwPanelVisible = false;
 let gfwStlyesInserted = false;
+let contentRoot; // DOM node to hold widget
 let wallet, walletCheckInterval;
 const body = document.querySelector('body')
 
 
-
-const contents = {
-  para: "Ready to try something?",
-  output: "{event: 'login', data: 'something new'}",
-  buttons: [
-    {
-      label: "I'm an author",
-      id: "button1",
-      go: function () {
-        beginAuthorFlow()
-      }
-    }, {
-      label: "I'm a commenter",
-      id: "button2",
-      go: function () {
-        beginCommenterFlow()
-      }
-    }]
-}
-
-const resetButton = {
-  label: "Reset",
-  id: "reset-button",
-  go: function () {
-    gfwUpdateContents(contents)
-  }
-}
-
-const closeButton = {
-  label: "Close",
-  id: "close-button",
-  go: function () {
-    alert('closing TODO')
-  }
-}
+// Styles for page injection
 
 const styles = () => {
   return `
@@ -118,6 +87,159 @@ const styles = () => {
     `
 }
 
+function insertStyles() {
+  let node = document.createElement("style")
+  let styleEl = document.querySelector('head').appendChild(node)
+  styleEl.innerHTML = styles()
+  gfwStlyesInserted = true;
+}
+
+
+
+// Initial widget content
+
+const startingContents = {
+  para: "Ready to try something?",
+  output: "{event: 'login', data: 'something new'}",
+  buttons: [
+    {
+      label: "I'm an author",
+      id: "button1",
+      go: function () {
+        updateGfwState({
+          userType: 'author'
+        })
+        transitionWidget(beginAuthorFlow)
+      }
+    }, {
+      label: "I'm a commenter",
+      id: "button2",
+      go: function () {
+        updateGfwState({
+          userType: 'commenter'
+        })
+        transitionWidget(beginCommenterFlow)
+      }
+    }
+  ]
+}
+
+let currentContents = startingContents; // Global content state
+
+// Generic components and actions
+
+const resetButton = {
+  label: "Reset",
+  id: "reset-button",
+  go: function () {
+    updateGfwState({
+      userType: undefined
+    })
+    walletCheckInterval && clearInterval(walletCheckInterval)
+    transitionWidget(startingContents)
+  }
+}
+
+const closeButton = {
+  label: "Close",
+  id: "close-button",
+  go: function () {
+    closeWidget()
+  }
+}
+
+function closeWidget() {
+  contentRoot.innerHTML = ''
+  currentContents = startingContents
+}
+
+// Commenter flow
+
+const beginCommenterFlow = {
+  para: `Hello :)<br/>
+  If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author.<br/>
+  To setup your wallet, please follow the <a href=''>instructions here</a>
+  `,
+  buttons: [{
+    label: "I've done that",
+    id: "done-that",
+    go: function () {
+      transitionWidget(commenterFlowGetWallet)
+    }
+  }, resetButton]
+}
+
+const commenterFlowGetWallet = {
+  para: `Great :)<br/>
+    Please enter your wallet address below:<br/>
+    <input type="text" name="wallet" /><br/>   
+    `,
+  buttons: [{
+    label: "Submit wallet",
+    id: "submit-wallet",
+    go: function () {
+      let input = document.querySelector('input[name=wallet]')
+      wallet = input.value
+      walletCheckInterval = setInterval(() => pollForSavedWallet(), 1000);
+      commenterFlowSubmitWallet()
+    }
+  }, resetButton]
+}
+
+const commenterFlowSubmitWallet = () => {
+  let newContents = {
+    para: `Excellent :)<br/>
+      In the box at the bottom is some code. We need you to submit it as a comment (Matt - this will be done via JS in future). Please paste it into the comment box and submit.<br/>
+      <span class="loading">Waiting for you to submit... page will update shortly thereafter...</span>
+      `,
+    output: `{"commenter_wallet": "${wallet}"}`,
+    buttons: [resetButton]
+  }
+  transitionWidget(newContents)
+}
+
+async function pollForSavedWallet() {
+  try {
+    let wresponse = await fetch('{{externalServiceRootUrl}}/data/wallets.json');
+
+    if (wresponse.ok) { // if HTTP-status is 200-299
+      // get the response body (the method explained below)
+      let wallets = await wresponse.json();
+
+      if (wallets[wallet]) {
+        clearInterval(walletCheckInterval)
+        transitionWidget(commenterFlowHandleWalletSuccess)
+      }
+    }
+  } catch (e) {
+    clearInterval(walletCheckInterval)
+  }
+}
+
+const commenterFlowHandleWalletSuccess = {
+  para: `Wowzers!<br/>
+    We have received your wallet!<br/>
+    You can go ahead and close this window now. If an author chooses to highlight your comment, we will use the wallet you submitted to share some of the page's revenue with you. How's that?!
+    `,
+  output: ``,
+  buttons: [closeButton, resetButton]
+}
+
+
+
+// Author flow
+
+const beginAuthorFlow = {
+  para: "Hello :)<br/>We need you to send us your author ID. Please <a href=''>click here</a> and copy the long number, and email it to your editor.<br/>",
+  buttons: [resetButton]
+}
+
+
+
+
+
+
+// Template management
 
 const template = (content) => {
   return `
@@ -131,141 +253,83 @@ const template = (content) => {
     `
 }
 
-function insertStyles() {
-  let node = document.createElement("style")
-  let styleEl = document.querySelector('head').appendChild(node)
-  styleEl.innerHTML = styles()
-  gfwStlyesInserted = true;
-}
-
 function insertContent() {
   !gfwStlyesInserted && insertStyles()
-  let node = document.createElement('div')
-  node.setAttribute('id', 'gfw-root')
+  if (!contentRoot) {
+    let node = document.createElement('div')
+    node.setAttribute('id', 'gfw-root')
+    contentRoot = body.appendChild(node)
+  }
   gfwPanelVisible = true;
-  let contentRoot = body.appendChild(node)
-  contentRoot.innerHTML = template(contents)
-  updateEventHandlers(contents)
+  contentRoot.innerHTML = template(currentContents)
+  updateEventHandlers()
 }
 
-function updateEventHandlers(newContents) {
-  newContents.buttons.forEach(buttonMeta => {
+function transitionWidget(someContents) {
+  let clonedContents = Object.assign({}, currentContents);
+  let newContents = {
+    ...clonedContents,
+    ...someContents
+  }
+  currentContents = newContents
+  contentRoot.innerHTML = template(currentContents)
+  updateEventHandlers()
+}
+
+function updateEventHandlers() {
+  currentContents.buttons.forEach(buttonMeta => {
     let button = document.querySelector(`#${buttonMeta.id}`)
     button.addEventListener('click', buttonMeta.go)
   })
 }
 
-function updateContent(newContent) {
-  let contentRoot = document.querySelector('#gfw-root')
-  contentRoot.innerHTML = template(newContent)
+// State handlers
+
+function updateGfwState(updates) {
+  let gotOldState = localStorage.getItem('gfwState');
+  let newState = updates;
+  if (gotOldState) {
+    let oldState = JSON.parse(gotOldState);
+    newState = {
+      ...oldState,
+      ...updates
+    }
+  }
+  localStorage.setItem('gfwState', JSON.stringify(newState))
+  return newState;
 }
 
 function gfwGotSignedInUser() {
+  const state = {
+    loggedIn: true
+  }
+  let currentState = updateGfwState(state)
+  if (currentState.userType === 'author') {
+    currentContents = beginAuthorFlow
+  } else if (currentState.userType === 'commenter') {
+    currentContents = beginCommenterFlow
+  } else {
+    currentContents = startingContents
+  }
   insertContent();
 }
 
-function gfwUpdateContents(someContents) {
-  let clonedContents = Object.assign({}, contents);
-  let newContents = {
-    ...clonedContents,
-    ...someContents
+function gfwGotSignedOutUser() {
+  const state = {
+    loggedIn: false
   }
-  updateContent(newContents)
-  updateEventHandlers(newContents)
+  updateGfwState(state)
+  closeWidget()
 }
 
-
-function beginAuthorFlow() {
-  let newContents = {
-    para: "Hello :)<br/>We need you to send us your author ID. Please <a href=''>click here</a> and copy the long number, and email it to your editor.<br/>",
-    buttons: [resetButton]
-  }
-  gfwUpdateContents(newContents)
-}
-
-function beginCommenterFlow() {
-  let newContents = {
-    para: `Hello :)<br/>
-    If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author.<br/>
-    To setup your wallet, please follow the <a href=''>instructions here</a>
-    `,
-    buttons: [{
-      label: "I've done that",
-      id: "done-that",
-      go: function () {
-        commenterFlowGetWallet()
-      }
-    }, resetButton]
-  }
-  gfwUpdateContents(newContents)
-}
-
-function commenterFlowGetWallet() {
-  let newContents = {
-    para: `Great :)<br/>
-    Please enter your wallet address below:<br/>
-    <input type="text" name="wallet" /><br/>   
-    `,
-
-    buttons: [{
-      label: "Submit wallet",
-      id: "submit-wallet",
-      go: function () {
-        let input = document.querySelector('input[name=wallet]')
-        wallet = input.value
-        commenterFlowSubmitWallet()
-      }
-    }, resetButton]
-  }
-  gfwUpdateContents(newContents)
-}
-
-
-function commenterFlowSubmitWallet() {
-  let newContents = {
-    para: `Excellent :)<br/>
-    In the box at the bottom is some code. We need you to submit it as a comment (Matt - this will be done via JS in future). Please paste it into the comment box and submit.<br/>
-    <span class="loading">Waiting for you to submit... page will update shortly thereafter...</span>
-    `,
-    output: `{"commenter_wallet": "${wallet}"}`,
-    buttons: [resetButton]
-  }
-  walletCheckInterval = setInterval(() => pollForSavedWallet(), 1000);
-  gfwUpdateContents(newContents)
-}
-
-
-async function pollForSavedWallet() {
-  try {
-    let wresponse = await fetch('{{externalServiceRootUrl}}/data/wallets.json');
-
-    if (wresponse.ok) { // if HTTP-status is 200-299
-      // get the response body (the method explained below)
-      let wallets = await wresponse.json();
-
-      if (wallets[wallet]) {
-        clearInterval(walletCheckInterval)
-        commenterFlowHandleWalletSuccess()
-      }
-    }  
-  } catch(e) {
-    clearInterval(walletCheckInterval)
-    console.log(e)
+function checkForLoggedInUser() {
+  let gotState = localStorage.getItem('gfwState');
+  if (gotState) {
+    let state = JSON.parse(gotState)
+    if (state.loggedIn) {
+      gfwGotSignedInUser()
+    }
   }
 }
 
-
-function commenterFlowHandleWalletSuccess() {
-  let newContents = {
-    para: `Wowzers!<br/>
-    We have received your wallet!<br/>
-    You can go ahead and close this window now. If an author chooses to highlight your comment, we will use the wallet you submitted to share some of the page's revenue with you. How's that?!
-    `,
-    output: ``,
-    buttons: [closeButton, resetButton]
-  }
-  gfwUpdateContents(newContents)
-}
-
-
-insertContent()
+checkForLoggedInUser()
