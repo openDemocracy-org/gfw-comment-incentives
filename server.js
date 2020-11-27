@@ -8,7 +8,7 @@ const SIGNING_SECRET = "empsec_fa0e94fca0c13666c96f01c09b3c3b4673e1bd37289d84841
 const crypto = require("crypto");
 // Constants
 const PORT = process.env.PORT || 8080;
-const HOST = '0.0.0.0';
+const HOST = process.env.HOST || '0.0.0.0';
 // App
 const app = express();
 const nunjucks = require('nunjucks');
@@ -35,7 +35,8 @@ function createHash(str) {
 }
 
 app.get('/articles/*', slashes(), function (req, res) {
-    const pageFullUrl = 'https://' + req.get('host') + req.originalUrl;
+    let protocol = process.env.PROTOCOL || 'https://'
+    const pageFullUrl = protocol + req.get('host') + req.originalUrl;
     let pageSlugHash = createHash(req.originalUrl);
     pageSlugHash = pageSlugHash < 0 ? pageSlugHash * -1 : pageSlugHash;
     res.render('coral.html', {
@@ -50,6 +51,13 @@ app.get('/articles/*', slashes(), function (req, res) {
 
 app.get('/assets/client.js', function (req, res) {
     res.render('client.js', {
+        coralRootUrl: process.env.CORAL_ROOT_URL,
+        externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
+    });
+})
+
+app.get('/assets/iframe.js', function (req, res) {
+    res.render('iframe.js', {
         externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
     });
 })

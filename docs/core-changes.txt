@@ -1,0 +1,16 @@
+# Changes required to Coral Talk
+
+Currently the only change is the addition of a script tag at the bottom of their base template:
+
+`src\core\server\app\views\templates\base.html`
+`++ <script src="[env.SERVICE_ROOT_URL]/assets/iframe.js"></script>`
+
+Where assets/iframe.js is served from views/iframe.js by server.js.
+
+## Coral Talk technical approach
+
+Define a new PostMessageService handler
+
+handler would be JS code similar to that inside iframe.js.
+
+Alternatively, we persuade Coral Team to allow arbitrary functions to be passed in by verified / trusted external services. This would ensure our contribution to core would be usable by others for alternative ends.

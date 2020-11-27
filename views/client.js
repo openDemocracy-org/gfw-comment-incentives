@@ -192,9 +192,14 @@ const commenterFlowSubmitWallet = () => {
       In the box at the bottom is some code. We need you to submit it as a comment (Matt - this will be done via JS in future). Please paste it into the comment box and submit.<br/>
       <span class="loading">Waiting for you to submit... page will update shortly thereafter...</span>
       `,
-    output: `{"commenter_wallet": "${wallet}"}`,
+    output: { "commenter_wallet": `${wallet}` },
     buttons: [resetButton]
   }
+  let message = {
+    id: 'COMMENTER_NEW_WALLET',
+    contents: { "commenter_wallet": `${wallet}` }
+  }
+  postMessage(message)
   transitionWidget(newContents)
 }
 
@@ -230,8 +235,14 @@ const commenterFlowHandleWalletSuccess = {
 // Author flow
 
 const beginAuthorFlow = {
-  para: "Hello :)<br/>We need you to send us your author ID. Please <a href=''>click here</a> and copy the long number, and email it to your editor.<br/>",
-  buttons: [resetButton]
+  para: `Hello :)<br/>`,
+  buttons: [{
+    id: "message-coral",
+    label: "Send wallet/username to oD",
+    go: function () {
+      alert('To do!')
+    }
+  }, resetButton]
 }
 
 
@@ -300,6 +311,7 @@ function updateGfwState(updates) {
 }
 
 function gfwGotSignedInUser() {
+
   const state = {
     loggedIn: true
   }
@@ -323,6 +335,7 @@ function gfwGotSignedOutUser() {
 }
 
 function checkForLoggedInUser() {
+
   let gotState = localStorage.getItem('gfwState');
   if (gotState) {
     let state = JSON.parse(gotState)
@@ -333,3 +346,24 @@ function checkForLoggedInUser() {
 }
 
 checkForLoggedInUser()
+
+function getCoralWindow() {
+  try {
+    var iframe = document.querySelector('#coral_thread_iframe');
+    var coralWindow = iframe.contentWindow;
+    return coralWindow
+  }
+  catch (error) {
+    console.error(error)
+    alert("Error: couldn't connect to Coral.")
+    return false;
+  }
+}
+
+function postMessage(comment) {
+  let coralWindow = getCoralWindow()
+  if (coralWindow) {
+    coralWindow.postMessage(comment, "{{coralRootUrl}}")
+  }
+}
+
