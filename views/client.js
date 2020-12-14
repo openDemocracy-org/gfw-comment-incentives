@@ -319,7 +319,11 @@ function updateGfwState(updates) {
 
 function gfwGotSignedInUser(state) {
 
-  let currentState = updateGfwState(state)
+  let definiteState = {
+    loggedIn: true
+  }
+
+  let currentState = updateGfwState(definiteState)
   if (currentState.userType === 'author') {
     currentContents = beginAuthorFlow
   } else if (currentState.userType === 'commenter') {
@@ -457,7 +461,7 @@ async function getHighlightedComment() {
   let meta = document.querySelector('[name="author_comment_id"]')
   if (meta) {
     let authorCommentId = meta.getAttribute('content')
-    
+
     let response = await fetch(`{{externalServiceRootUrl}}/data/${slug}-chosen.json`);
 
     if (response.ok) { // if HTTP-status is 200-299
