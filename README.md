@@ -24,7 +24,7 @@ whenever the "STORY_CREATED" event fires in Coral Talk. This happens every time 
 
 ### Moderation phase
 
-Every comment posted to Coral is sent to `server.js` via a "Moderation phase" in the Coral Talk instance. This hits the `/highlight-comment` endpoint.
+Every comment posted to Coral is sent to [./server.js](./server.js) via a "Moderation phase" in the Coral Talk instance. This hits the `/handle-comment` endpoint.
 
 The service reads these comments and looks for identifiers sent in the comment body that it is being passed an author's web monetization wallet address, or a comment to highlight on the page. Comments that are used to pass messages are moderated as `status: 'REJECTED'` meaning they aren't shown as comments.
 
@@ -48,7 +48,7 @@ Secondly, clone openDemocracy's forked Coral Talk:
 
 `$ git clone git@github.com:openDemocracy-org/talk.git`
 
-We need a Coral Talk instance for the service to interact with. openDemocracy's [forked version](https://github.com/openDemocracy-org/talk) requests a JS file from this service (`views/iframe.js`), allowing us to run custom JS within the Coral Talk iframe. That's the only difference.
+We need a Coral Talk instance for the service to interact with. openDemocracy's [forked version](https://github.com/openDemocracy-org/talk) requests a JS file from this service [./views/iframe.js](./views/iframe.js), allowing us to run custom JS within the Coral Talk iframe. That's the only difference.
 
 On the `next` branch of your cloned `talk`, run `$ npm install`
 
@@ -68,8 +68,6 @@ $ docker run -d -p 6379:6379 --restart always --name redis redis:3.2
 Clone this project and `npm install`. Copy `.env.default` to `.env`. 
 
 Run `npm run start` to start the server. If you want to work on the project productively you can run `npm run watch` and the server will reload.
-
-Once you have a local Coral instance, update `CORAL_ROOT_URL=http://localhost:3000` if it is running on a port other than 3000.
 
 You should now be able to access the development oD website at [http://localhost:8080/articles/hello-world](http://localhost:8080/articles/hello-world]). 
 
@@ -96,4 +94,5 @@ Once install is complete, you should be able to see the Coral comments panel at 
 (If this hasn't worked, check the ports are 8080 for the Incentives Service and 3000 for Coral Talk. Make sure you have copied .env.default to .env in the code for this project.)
 
 Within your Coral Talk instance you need to create an External Moderation phase, an endpoint where all the comments get sent to. Our handler in [./server.js](./server.js) is listening on `/handle-comment` so the URL should be http://localhost:8080/handle-comment. You also need to create a webhook endpoint that gets notified of Coral's "STORY_CREATED" event. The URL for this is http://localhost:8080/create-story.
+
 
