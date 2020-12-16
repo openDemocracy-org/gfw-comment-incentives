@@ -171,7 +171,7 @@ function getSlugFromUrl(urlString) {
     return slug
 }
 
-app.post("/highlight-comment", (req, res) => {
+app.post("/handle-comment", (req, res) => {
     let storyUrl = getStoryUrlFromComment(req.body)
     let storySlug = getSlugFromUrl(storyUrl)
     console.log('now!')

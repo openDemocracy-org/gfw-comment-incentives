@@ -36,11 +36,64 @@ This file is stored in `views/client.js` and is served via the Nunjucks templati
 
 ## Running locally
 
-Clone the project and `npm install`. Rename `.env.default` to `.env`. 
+Following the steps below will ensure you get your local version up and running as quickly as possible. 
+
+### Supporting software: download and update / install
+
+Firstly, and if you haven't already, install [Docker Desktop](https://www.docker.com/products/docker-desktop) for your OS. If you have Docker, make sure it's up-to-date. Install NodeJS if you haven't already.
+
+### Coral Talk Step 1: clone and install dependencies
+
+Secondly, clone openDemocracy's forked Coral Talk:
+
+`$ git clone git@github.com:openDemocracy-org/talk.git`
+
+We need a Coral Talk instance for the service to interact with. openDemocracy's [forked version](https://github.com/openDemocracy-org/talk) requests a JS file from this service (`views/iframe.js`), allowing us to run custom JS within the Coral Talk iframe. That's the only difference.
+
+On the `next` branch of your cloned `talk`, run `$ npm install`
+
+### Coral Talk Step 2: download docker database images
+
+We are following the instructions for running Coral Talk from source on [Coral's setup page](https://docs.coralproject.net/coral/#source):
+
+Setup Mongo and Redis using Docker:
+
+```
+$ docker run -d -p 27017:27017 --restart always --name mongo mongo:4.2
+$ docker run -d -p 6379:6379 --restart always --name redis redis:3.2
+```
+
+### Incentives Service: clone, install dependencies and run
+
+Clone this project and `npm install`. Copy `.env.default` to `.env`. 
 
 Run `npm run start` to start the server. If you want to work on the project productively you can run `npm run watch` and the server will reload.
 
-You need to specify a Coral instance for it to interact with. It is best to be running a Coral instance locally. Follow [instructions for that on Trello](https://trello.com/c/baJNGrCW/60-ali-send-matt-his-local-od-version).
-
 Once you have a local Coral instance, update `CORAL_ROOT_URL=http://localhost:3000` if it is running on a port other than 3000.
+
+You should now be able to access the development oD website at [http://localhost:8080/articles/hello-world](http://localhost:8080/articles/hello-world]). 
+
+### Coral Talk Step 3: run and install a local Coral Talk instance
+
+Our forked Coral Talk requests a JS file from this service. We need it to load our local version for local development. Open `src/core/server/app/views/templates/base.html` and comment out the staging URL and uncomment the local URL. 
+
+Coral's setup docs say you can just start the service now, but we've only had success running the build command first:
+
+`$ npm run build:development`
+
+Once this has completed you can run
+
+`$ npm run start:development`
+
+You should now be able to access the Coral Talk install page at [http://localhost:3000/install](http://localhost:3000/install). 
+
+### Connecting them up
+
+Follow the Coral Talk installation steps. The only value that matters is the Site Permitted Domains. This needs to be set to the URL of our incentives service above: http://localhost:8080
+
+Once install is complete, you should be able to see the Coral comments panel at the bottom of an article page: [http://localhost:8080/articles/hello-world](http://localhost:8080/articles/hello-world])
+
+(If this hasn't worked, check the ports are 8080 for the Incentives Service and 3000 for Coral Talk. Make sure you have copied .env.default to .env in the code for this project.)
+
+Within your Coral Talk instance you need to create an External Moderation phase, an endpoint where all the comments get sent to. Our handler in [./server.js](./server.js) is listening on `/handle-comment` so the URL should be http://localhost:8080/handle-comment. You also need to create a webhook endpoint that gets notified of Coral's "STORY_CREATED" event. The URL for this is http://localhost:8080/create-story.
 
