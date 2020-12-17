@@ -323,6 +323,11 @@ function gfwGotSignedInUser(state) {
     loggedIn: true
   }
 
+  let state = {
+    ...state,
+    ...definiteState
+  }
+
   let currentState = updateGfwState(definiteState)
   if (currentState.userType === 'author') {
     currentContents = beginAuthorFlow
@@ -336,16 +341,19 @@ function gfwGotSignedInUser(state) {
   let meta = document.querySelector('[name="author_comment_id"]')
   if (meta) {
     let authorCommentId = meta.getAttribute('content')
-    if (state.coralUserId) {
-      if (state.coralUserId === authorCommentId) {
-        coralReadyActions.push(function () {
-          let message = {
-            contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
-          }
-          postMessage(message)
-        })
+    if (authorCommentId) {
+      if (state.coralUserId) {
+        if (state.coralUserId === authorCommentId) {
+          coralReadyActions.push(function () {
+            let message = {
+              contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
+            }
+            postMessage(message)
+          })
+        }
       }
     }
+
   }
 
 
@@ -367,6 +375,7 @@ function checkForLoggedInUser() {
     let state = JSON.parse(gotState)
     if (state.loggedIn) {
       gfwGotSignedInUser(state)
+      document.querySelector('#gfw-container').removeAttribute('hidden')
     }
   }
 }
@@ -437,7 +446,9 @@ btnClaimArticle.addEventListener('click', function () {
     let newContents = {
       para: `Excellent :)<br/>
         Your CoralTalk ID has been stored on the server. Please click the button below to email it to Matt:<br/>
-        <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${data}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a>
+        <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${data}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
+        Your coral ID: ${data}
+
         `,
       buttons: [resetButton]
     }
@@ -450,31 +461,41 @@ btnClaimArticle.addEventListener('click', function () {
 
 })
 
-function handleCoralReady() {
-  coralReadyActions.forEach((action) => action())
-}
+
 
 
 // Get highlighted comment
-
 async function getHighlightedComment() {
   let meta = document.querySelector('[name="author_comment_id"]')
   if (meta) {
     let authorCommentId = meta.getAttribute('content')
 
-    let response = await fetch(`{{externalServiceRootUrl}}/data/${slug}-chosen.json`);
+    if (authorCommentId) {
+      try {
+        let response = await fetch(`{{externalServiceRootUrl}}/data/${slug}-chosen.json`);
 
-    if (response.ok) { // if HTTP-status is 200-299
-      // get the response body (the method explained below)
-      let data = await response.json();
-
-      if (data.author_id === authorCommentId) {
-        console.log('got valid highlighted comment!')
-        let highlightedCommentBox = document.querySelector('#highlighted-comment')
-        highlightedCommentBox.innerHTML = data.chosen_comment[0].comment.body
+        if (response.ok) { // if HTTP-status is 200-299
+          // get the response body (the method explained below)
+          let data = await response.json();
+          console.log(data)
+          if (data.author_id === authorCommentId) {
+            console.log('got valid highlighted comment!')
+            let highlightedCommentBox = document.querySelector('#highlighted-comment')
+            highlightedCommentBox.innerHTML = data.chosen_comment[0].comment.body
+          }
+        }
+      }
+      catch (error) {
+        console.error(error)
       }
     }
   }
 }
 
 getHighlightedComment()
+
+
+
+function handleCoralReady() {
+  coralReadyActions.forEach((action) => action())
+}

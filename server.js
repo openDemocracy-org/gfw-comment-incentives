@@ -35,18 +35,24 @@ function createHash(str) {
 }
 
 app.get('/articles/*', slashes(), function (req, res) {
+
     let protocol = process.env.PROTOCOL || 'https://'
     const pageFullUrl = protocol + req.get('host') + req.originalUrl;
     let pageSlugHash = createHash(req.originalUrl);
     pageSlugHash = pageSlugHash < 0 ? pageSlugHash * -1 : pageSlugHash;
-    res.render('coral.html', {
+    let coralAuthorId = req.query.caid
+    let opts = {
         tabTitle: `${req.originalUrl} - od`,
         pageSlugHash: pageSlugHash,
         pageTitle: `An oD article with page slug ${req.originalUrl}`,
         pageFullUrl: pageFullUrl.includes('https://localhost') ? process.env.PAGE_ROOT_URL + req.originalUrl : pageFullUrl,
         pageRootUrl: process.env.PAGE_ROOT_URL,
-        coralRootUrl: process.env.CORAL_ROOT_URL
-    });
+        coralRootUrl: process.env.CORAL_ROOT_URL,
+        coralAuthorId: coralAuthorId ? coralAuthorId : ''
+    }
+
+
+    res.render('coral.html', opts);
 });
 
 app.get('/assets/client.js', function (req, res) {
