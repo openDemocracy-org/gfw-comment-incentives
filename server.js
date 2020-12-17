@@ -37,15 +37,24 @@ function createHash(str) {
 app.get('/articles/*', slashes(), function (req, res) {
 
     let protocol = process.env.PROTOCOL || 'https://'
-    const pageFullUrl = protocol + req.get('host') + req.originalUrl;
-    let pageSlugHash = createHash(req.originalUrl);
-    pageSlugHash = pageSlugHash < 0 ? pageSlugHash * -1 : pageSlugHash;
+    
+    let pageSlug = req.originalUrl
     let coralAuthorId = req.query.caid
+    if (coralAuthorId) {
+        // remove query params
+        pageSlug = req.originalUrl.split('?')[0]
+    }
+    let pageSlugHash = createHash(pageSlug);
+
+    const pageFullUrl = protocol + req.get('host') + pageSlug;
+
+    pageSlugHash = pageSlugHash < 0 ? pageSlugHash * -1 : pageSlugHash;
+
     let opts = {
-        tabTitle: `${req.originalUrl} - od`,
+        tabTitle: `${pageSlug} - od`,
         pageSlugHash: pageSlugHash,
-        pageTitle: `An oD article with page slug ${req.originalUrl}`,
-        pageFullUrl: pageFullUrl.includes('https://localhost') ? process.env.PAGE_ROOT_URL + req.originalUrl : pageFullUrl,
+        pageTitle: `An oD article with page slug ${pageSlug}`,
+        pageFullUrl: pageFullUrl.includes('https://localhost') ? process.env.PAGE_ROOT_URL + pageSlug : pageFullUrl,
         pageRootUrl: process.env.PAGE_ROOT_URL,
         coralRootUrl: process.env.CORAL_ROOT_URL,
         coralAuthorId: coralAuthorId ? coralAuthorId : ''
@@ -68,24 +77,7 @@ app.get('/assets/iframe.js', function (req, res) {
     });
 })
 
-function addToFile(fileName, message) {
-    fs.readFile(`public/data/${fileName}-comments.json`, 'utf-8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file from disk: ${err}`);
-        } else {
-            // parse JSON string to JSON object
-            const contents = JSON.parse(data);
-            // add a new record
-            contents.push(JSON.parse(message));
-            // write new data back to the file
-            fs.writeFile(`public/data/${fileName}-comments.json`, JSON.stringify(contents, null, 4), (err) => {
-                if (err) {
-                    console.log(`Error writing file: ${err}`);
-                }
-            });
-        }
-    });
-}
+
 
 function handleHighlightedComment(comment, sentDetails) {
     const highlightedCommentCandidate = {
@@ -97,19 +89,15 @@ function handleHighlightedComment(comment, sentDetails) {
     fs.readFile(`public/data/${storySlug}-comments.json`, 'utf-8', (err, data) => {
         if (err) {
             console.log(`Error reading file from disk: ${err}`);
+            // TODO handle error
         } else {
             // parse JSON string to JSON object
             const contents = JSON.parse(data);
-
             const chosenComment = contents.filter(comment => comment.comment.body.includes(sentDetails.commenter_comment.substr(1, 20)))
-            console.log(chosenComment)
-            highlightedCommentCandidate.chosen_comment = chosenComment
-            console.log(chosenComment)
-            fs.writeFile(`public/data/${storySlug}-chosen.json`, JSON.stringify(highlightedCommentCandidate, null, 4), (err) => {
-                if (err) {
-                    console.log(`Error writing file: ${err}`);
-                }
-            });
+            highlightedCommentCandidate.chosen_comment = chosenComment[0]
+            let fileName = `public/data/${storySlug}-chosen.json`
+            createOrUpdateFile(fileName, 'object', highlightedCommentCandidate)
+
         }
     });
 }
@@ -118,53 +106,26 @@ function handleHighlightedComment(comment, sentDetails) {
 function handleAuthorCandidate(comment, sentDetails) {
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
-    fs.readFile(`public/data/${storySlug}-authors.json`, 'utf-8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file from disk: ${err}`);
-        } else {
-            // parse JSON string to JSON object
-            // parse JSON string to JSON object
-            let contents;
-            if (data) {
-                contents = JSON.parse(data);
-            } else {
-                contents = {}
-            }
-            contents[sentDetails.uuid] = comment.author.id
 
+    let toStore = {
+        key: sentDetails.uuid,
+        value: comment.author.id
+    }
 
-            fs.writeFile(`public/data/${storySlug}-authors.json`, JSON.stringify(contents, null, 4), (err) => {
-                if (err) {
-                    console.log(`Error writing file: ${err}`);
-                }
-            });
-        }
-    });
+    let fileName = `public/data/${storySlug}-authors.json`;
+    createOrUpdateFile(fileName, 'objectKey', toStore);
+
 }
 
 function handleNewWallet(comment, sentDetails) {
-    fs.readFile(`public/data/wallets.json`, 'utf-8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file from disk: ${err}`);
-        } else {
-            // parse JSON string to JSON object
-            let contents;
-            if (data) {
-                contents = JSON.parse(data);
-            } else {
-                contents = {}
-            }
-            contents[sentDetails.wallet] = comment.author.id;
 
+    let fileName = `public/data/wallets.json`;
+    let toStore = {
+        key: sentDetails.wallet,
+        value: comment.author.id
+    }
+    createOrUpdateFile(fileName, 'objectKey', toStore)
 
-            fs.writeFile(`public/data/wallets.json`, JSON.stringify(contents, null, 4), (err) => {
-                if (err) {
-                    console.log(`Error writing file: ${err}`);
-                }
-            });
-        }
-
-    });
 }
 
 function getStoryUrlFromComment(reqBody) {
@@ -180,7 +141,6 @@ function getSlugFromUrl(urlString) {
 app.post("/handle-comment", (req, res) => {
     let storyUrl = getStoryUrlFromComment(req.body)
     let storySlug = getSlugFromUrl(storyUrl)
-    console.log('now!')
     try {
         let body = req.body.comment.body
         let b1 = body.split('<div>')[1]
@@ -189,7 +149,6 @@ app.post("/handle-comment", (req, res) => {
         let sentJson = JSON.parse(b3)
         console.log(sentJson)
         if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
-            console.log('got highlighted comment')
             handleHighlightedComment(req.body, sentJson)
             res.json({ status: 'REJECTED' });
         } else if (sentJson.event_name === 'NEW_WALLET') {
@@ -203,8 +162,7 @@ app.post("/handle-comment", (req, res) => {
         }
 
     } catch (e) {
-        console.log('This comment is a normal comment')
-        addToFile(storySlug, JSON.stringify(req.body))
+        createOrUpdateFile(`public/data/${storySlug}-comments.json`, 'array', req.body)
         res.json({ received: true });
     }
 
@@ -212,19 +170,54 @@ app.post("/handle-comment", (req, res) => {
 
 app.post('/create-story', (req, res) => {
 
-    let storyUrl = req.body.data.storyURL
-    let storySlug = getSlugFromUrl(storyUrl);
-    fs.appendFile(`public/data/${storySlug}-comments.json`, '[]', (err) => {
-        if (err) console.log(err)
-    });
-    fs.appendFile(`public/data/${storySlug}-authors.json`, '{}', (err) => {
-        if (err) console.log(err)
-    });
-    fs.appendFile(`public/data/${storySlug}-chosen.json`, '{}', (err) => {
-        if (err) console.log(err)
-        res.send('Created story');
-    });
+    // Possible DB config here in future
+
 })
+
+
+function createOrUpdateFile(fileName, dataType, content) {
+
+    function writeToFile(fileExists, data) {
+        // parse JSON string to JSON object
+        let contents;
+
+        if (fileExists) {
+            contents = JSON.parse(data);
+        } else {
+            if (dataType === 'array') {
+                contents = []
+            } else {
+                contents = {}
+            }
+        }
+
+        if (dataType === 'array') {
+            contents.push(content) // push array value
+        } else if (dataType === 'objectKey') {
+            contents[content.key] = content.value // add object key
+        } else {
+            contents = content // update whole object
+        }
+
+        // write new data back to the file
+        fs.writeFile(fileName, JSON.stringify(contents, null, 4), (err) => {
+            if (err) {
+                console.log(`Error writing file: ${err}`);
+            }
+        });
+    }
+
+    fs.readFile(fileName, 'utf-8', (err, data) => {
+        if (err) {
+            let fileExists = false;
+            writeToFile(fileExists)
+
+        } else {
+            let fileExists = true;
+            writeToFile(fileExists, data)
+        }
+    });
+}
 
 
 

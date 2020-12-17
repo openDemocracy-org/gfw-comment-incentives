@@ -3,8 +3,10 @@
 const gfwCommentsActive = true;
 let gfwPanelVisible = false;
 let gfwStlyesInserted = false;
-let contentRoot; // DOM node to hold widget
+let menuRoot = document.getElementById('gfw-menu-container')
+let contentRoot = document.getElementById('gfw-widget'); // DOM node to hold widget
 let wallet, pollCheckInterval;
+let gfwMenuButton;
 const body = document.querySelector('body')
 const coralReadyActions = []
 
@@ -22,16 +24,14 @@ const slug = getSlugFromUrl(window.location.pathname)
 
 const styles = () => {
   return `
+    #gfw-widget {
+      clear: both;
+    }
     #gfw-comments {
         overflow-x: hidden;
-        overflow-y: auto;
-        position: fixed;
-        width: 30vw;
-        height: 30vw;
-        bottom: 2rem;
-        right: 2rem;
-        box-shadow: 0px 0px 4px rgba(0,0,0,.4);
+        overflow-y: auto; 
         padding-bottom: 5rem;
+        margin-bottom: 2rem;
     }
     #gfw-comments h1 {
         font-size: 1.4rem;
@@ -46,10 +46,6 @@ const styles = () => {
       position: absolute;
       top: 1rem;
       right: 0.5rem;
-    }
-
-    #gfw-comments input {
-      width: 100%;
     }
 
     #gfw-comments button {
@@ -79,6 +75,12 @@ const styles = () => {
       background: inherit;
       border: inherit;
     }
+    #gfw-menu-container {
+      float: right;
+    }
+    #gfw-menu-contents {
+      position: absolute;
+    }
     `
 }
 
@@ -88,37 +90,6 @@ function insertStyles() {
   styleEl.innerHTML = styles()
   gfwStlyesInserted = true;
 }
-
-
-
-// Initial widget content
-
-const startingContents = {
-  para: "Ready to try something?",
-  buttons: [
-    {
-      label: "I'm an author",
-      id: "button1",
-      go: function () {
-        updateGfwState({
-          userType: 'author'
-        })
-        transitionWidget(beginAuthorFlow)
-      }
-    }, {
-      label: "I'm a commenter",
-      id: "button2",
-      go: function () {
-        updateGfwState({
-          userType: 'commenter'
-        })
-        transitionWidget(beginCommenterFlow)
-      }
-    }
-  ]
-}
-
-let currentContents = startingContents; // Global content state
 
 // Generic components and actions
 
@@ -147,47 +118,38 @@ function closeWidget() {
   currentContents = startingContents
 }
 
-// Commenter flow
+// Add wallet flow
 
-const beginCommenterFlow = {
+const startingContents = {
   para: `Hello :)<br/>
   If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author.<br/>
   To setup your wallet, please follow the <a href=''>instructions here</a>
+  Please enter your wallet address below:<br/>
+  <input type="text" name="wallet" /><br/>   
   `,
-  buttons: [{
-    label: "I've done that",
-    id: "done-that",
-    go: function () {
-      transitionWidget(commenterFlowGetWallet)
-    }
-  }, resetButton]
-}
-
-const handleLookupError = () => {
-  alert('Lookup failed') // TODO
-}
-
-const commenterFlowGetWallet = {
-  para: `Great :)<br/>
-    Please enter your wallet address below:<br/>
-    <input type="text" name="wallet" /><br/>   
-    `,
   buttons: [{
     label: "Submit wallet",
     id: "submit-wallet",
     go: function () {
       let input = document.querySelector('input[name=wallet]')
       wallet = input.value
-      const lookup = {
-        key: wallet
-      }
-      pollCheckInterval = setInterval(() => pollForSavedContent('/data/wallets.json', lookup, 'objKeyExist', () => {
+
+      pollCheckInterval = setInterval(() => pollForSavedContent('/data/wallets.json', wallet, 'objKeyExist', () => {
         transitionWidget(commenterFlowHandleWalletSuccess);
       }, handleLookupError), 1000);
       commenterFlowSubmitWallet()
     }
-  }, resetButton]
+  }]
+
 }
+
+let currentContents = startingContents; // Global content state
+
+const handleLookupError = () => {
+  alert('Lookup failed') // TODO
+}
+
+
 
 const commenterFlowSubmitWallet = () => {
   let newContents = {
@@ -237,48 +199,89 @@ const commenterFlowHandleWalletSuccess = {
     We have received your wallet!<br/>
     You can go ahead and close this window now. If an author chooses to highlight your comment, we will use the wallet you submitted to share some of the page's revenue with you. How's that?!
     `,
-  buttons: [closeButton, resetButton]
+  buttons: [closeButton]
 }
 
-
-
-// Author flow
-
-const beginAuthorFlow = {
-  para: `Hello :)<br/>`,
-  buttons: [{
-    id: "message-coral",
-    label: "Send wallet/username to oD",
-    go: function () {
-      alert('To do!')
-    }
-  }, resetButton]
+const menuTemplate = () => {
+  return ` 
+    <button id="gfw-menu" aria-haspopup="true" aria-expanded="false">GfW Options
+        <span aria-hidden="true">&#x25be</span>
+    </button>
+    <div id="gfw-menu-contents" role="menu" hidden="hidden">
+        <button role="menuitem" id="btn-claim-article" tabindex="-1">Claim article authorship</button>
+    </div> 
+`
 }
-
-
-
-
-
 
 const template = (content) => {
   return `
-<section id="gfw-comments" class="sidebar sidebar--banner sidebar--banner-blue ${content.class ? content.class : ''}">
+<section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary ${content.class ? content.class : ''}">
     <h1 class="sidebar__heading">Comment Incentives</h1>
-    <h2>$ £ ¥ ₹ ₽ 元 ₪ ₯ ₺ </h2>
     <p class="rich-text">${content.para}</p>
     ${content.buttons.map((button) => `<button class="sidebar__link" id="${button.id}">${button.label}</button>`)}
     </section>
     `
 }
 
-function insertContent() {
-  !gfwStlyesInserted && insertStyles()
-  if (!contentRoot) {
-    let node = document.createElement('div')
-    node.setAttribute('id', 'gfw-root')
-    contentRoot = body.appendChild(node)
+function toggleMenu() {
+
+  let expanded = gfwMenuButton.getAttribute('aria-expanded')
+  let menu = document.querySelector('#gfw-menu + [role="menu"]')
+  if (expanded === 'false') {
+    gfwMenuButton.setAttribute('aria-expanded', 'true')
+    menu.hidden = false;
+    menu.querySelector(':not([disabled])').focus()
+  } else {
+    gfwMenuButton.setAttribute('aria-expanded', 'false')
+    menu.hidden = true;
   }
+
+}
+
+function insertContent() { // Runs once at the beginning
+  !gfwStlyesInserted && insertStyles()
   gfwPanelVisible = true;
+  menuRoot.innerHTML = menuTemplate()
+  gfwMenuButton = document.querySelector('button#gfw-menu');
+
+  function setMenuListeners() {
+    gfwMenuButton.addEventListener('click', toggleMenu)
+    gfwMenuButton.addEventListener('keydown', function (evt) {
+      if (evt.keyCode === 40) {
+        toggleMenu()
+      }
+    })
+
+    // Claim article authorship
+    let btnClaimArticle = document.querySelector('#btn-claim-article')
+    btnClaimArticle.addEventListener('click', function () {
+
+      let message = {
+        contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
+      }
+      postMessage(message)
+      pollCheckInterval = setInterval(() => pollForSavedContent(`/data/${slug}-authors.json`, sessionUUID, 'objKeyExist', (data) => {
+        let newContents = {
+          para: `Excellent :)<br/>
+          Your CoralTalk ID has been stored on the server. Please click the button below to email it to Matt:<br/>
+          <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${data}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
+          Your coral ID: ${data}
+  
+          `,
+          buttons: [closeButton]
+        }
+        updateGfwState({
+          coralUserId: data
+        })
+        transitionWidget(newContents)
+      }, handleLookupError), 1000);
+    })
+  }
+
+
+
+
+  setMenuListeners()
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers()
 }
@@ -299,6 +302,7 @@ function updateEventHandlers() {
     let button = document.querySelector(`#${buttonMeta.id}`)
     button.addEventListener('click', buttonMeta.go)
   })
+
 }
 
 // State handlers
@@ -319,23 +323,9 @@ function updateGfwState(updates) {
 
 function gfwGotSignedInUser(state) {
 
-  let definiteState = {
-    loggedIn: true
-  }
+  let currentState = updateGfwState(state)
+  currentContents = startingContents
 
-  let state = {
-    ...state,
-    ...definiteState
-  }
-
-  let currentState = updateGfwState(definiteState)
-  if (currentState.userType === 'author') {
-    currentContents = beginAuthorFlow
-  } else if (currentState.userType === 'commenter') {
-    currentContents = beginCommenterFlow
-  } else {
-    currentContents = startingContents
-  }
 
   // Check for approved author
   let meta = document.querySelector('[name="author_comment_id"]')
@@ -353,7 +343,6 @@ function gfwGotSignedInUser(state) {
         }
       }
     }
-
   }
 
 
@@ -375,12 +364,12 @@ function checkForLoggedInUser() {
     let state = JSON.parse(gotState)
     if (state.loggedIn) {
       gfwGotSignedInUser(state)
-      document.querySelector('#gfw-container').removeAttribute('hidden')
+      document.querySelector('#gfw-menu').removeAttribute('hidden')
     }
   }
 }
 
-checkForLoggedInUser()
+
 
 function getCoralWindow() {
   try {
@@ -402,67 +391,11 @@ function postMessage(comment) {
   }
 }
 
-
-/* Generic codes */
-
-let gfwMenuButton = document.querySelector('#gfw-menu')
-gfwMenuButton.addEventListener('click', toggleMenu)
-gfwMenuButton.addEventListener('keydown', function (evt) {
-  if (evt.keyCode === 40) {
-    toggleMenu()
-  }
-})
-function toggleMenu() {
-  let expanded = gfwMenuButton.getAttribute('aria-expanded')
-  let menu = document.querySelector('#gfw-menu + [role="menu"]')
-  if (expanded === 'false') {
-    gfwMenuButton.setAttribute('aria-expanded', 'true')
-    menu.hidden = false;
-    menu.querySelector(':not([disabled])').focus()
-  } else {
-    gfwMenuButton.setAttribute('aria-expanded', 'false')
-    menu.hidden = true;
-  }
-}
-
 function getSlugFromUrl(urlString) {
   let urlParts = urlString.split('/')
   let slug = urlParts[urlParts.length - 2]
   return slug
 }
-
-// Claim article authorship
-
-let btnClaimArticle = document.querySelector('#btn-claim-article')
-btnClaimArticle.addEventListener('click', function () {
-
-  let message = {
-    contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
-  }
-  postMessage(message)
-
-  pollCheckInterval = setInterval(() => pollForSavedContent(`/data/${slug}-authors.json`, sessionUUID, 'objKeyExist', (data) => {
-
-    let newContents = {
-      para: `Excellent :)<br/>
-        Your CoralTalk ID has been stored on the server. Please click the button below to email it to Matt:<br/>
-        <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${data}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
-        Your coral ID: ${data}
-
-        `,
-      buttons: [resetButton]
-    }
-    updateGfwState({
-      coralUserId: data
-    })
-    transitionWidget(newContents)
-
-  }, handleLookupError), 1000);
-
-})
-
-
-
 
 // Get highlighted comment
 async function getHighlightedComment() {
@@ -477,11 +410,11 @@ async function getHighlightedComment() {
         if (response.ok) { // if HTTP-status is 200-299
           // get the response body (the method explained below)
           let data = await response.json();
-          console.log(data)
+      
           if (data.author_id === authorCommentId) {
-            console.log('got valid highlighted comment!')
-            let highlightedCommentBox = document.querySelector('#highlighted-comment')
-            highlightedCommentBox.innerHTML = data.chosen_comment[0].comment.body
+            document.querySelector('.highlighted-comment').removeAttribute('hidden')
+            let highlightedCommentBox = document.querySelector('.highlighted-comment-content')
+            highlightedCommentBox.innerHTML = data.chosen_comment.comment.body
           }
         }
       }
@@ -492,10 +425,10 @@ async function getHighlightedComment() {
   }
 }
 
-getHighlightedComment()
-
-
-
 function handleCoralReady() {
   coralReadyActions.forEach((action) => action())
 }
+
+getHighlightedComment()
+checkForLoggedInUser()
+
