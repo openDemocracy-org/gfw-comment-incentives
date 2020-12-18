@@ -96,6 +96,7 @@ function insertStyles() {
 const resetButton = {
   label: "Reset",
   id: "reset-button",
+  events: null,
   go: function () {
     updateGfwState({
       userType: undefined
@@ -108,6 +109,7 @@ const resetButton = {
 const closeButton = {
   label: "Close",
   id: "close-button",
+  events: null,
   go: function () {
     closeWidget()
   }
@@ -171,6 +173,7 @@ const commenterFlowSubmitWallet = () => {
       In the box at the bottom is some code. We need you to submit it as a comment (Matt - this will be done via JS in future). Please paste it into the comment box and submit.<br/>
       <span class="loading">Waiting for you to submit... page will update shortly thereafter...</span>
       `,
+    events: null,
     buttons: [resetButton]
   }
   let message = {
@@ -209,7 +212,7 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
     }
   } catch (e) {
     clearInterval(pollCheckInterval)
-    console.error(e)
+    console.log(e)
   }
 }
 
@@ -217,6 +220,7 @@ const commenterFlowHandleWalletSuccess = {
   para: `We have received your wallet!<br/>
     You can go ahead and close this window now. If an author chooses to highlight your comment, we will use the wallet you submitted to share some of the page's revenue with you. How's that?!
     `,
+  events: null,
   buttons: [closeButton]
 }
 

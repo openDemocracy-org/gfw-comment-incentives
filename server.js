@@ -10,7 +10,7 @@ const crypto = require("crypto");
 // Constants
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
-const mongoUrl = 'mongodb://srv-captain--coral-mongo:27017';
+const mongoUrl = 'mongodb://srv-captain--coral-mongo:27017'; // 'mongodb://srv-captain--coral-mongo:27017'
 
 // App
 const app = express();
@@ -93,6 +93,12 @@ app.get('/assets/iframe.js', function (req, res) {
 
 app.get('/data/wallets.json', async function (req, res) {
     const docs = await getAllDocs('wallets')
+    res.json(docs)
+})
+
+app.get('/data/comments/*', async function (req, res) {
+    const slug = req.originalUrl.split('/data/comments/')[1].split('.json')[0]
+    const docs = await getAllDocs(`${slug}-comments`)
     res.json(docs)
 })
 
