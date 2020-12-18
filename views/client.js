@@ -118,30 +118,44 @@ function closeWidget() {
   currentContents = startingContents
 }
 
-// Add wallet flow
-
-const startingContents = {
+let startingContents = {
   para: `Hello :)<br/>
-  If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author.<br/>
-  To setup your wallet, please follow the <a href=''>instructions here</a>
-  Please enter your wallet address below:<br/>
-  <input type="text" name="wallet" /><br/>   
-  `,
-  buttons: [{
-    label: "Submit wallet",
-    id: "submit-wallet",
-    go: function () {
-      let input = document.querySelector('input[name=wallet]')
+If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author.<br/>
+To setup your wallet, please follow the <a href=''>instructions here</a>
+Please enter your wallet address below:<br/>
+<form id="wallet"><input type="text" name="wallet" /><button id="submit-wallet">Submit wallet</button></form><br/>   
+`,
+  buttons: [],
+  events: function () {
+    let input = document.querySelector('input[name=wallet]')
+    let walletSubmitForm = document.querySelector('form#wallet')
+    walletSubmitForm.addEventListener('submit', function (evt) {
+      evt.preventDefault()
       wallet = input.value
+      if (wallet === '') {
+        return
+      }
+
+      if (wallet[0] != '$') {
+        return
+      } else {
+        wallet = wallet.slice(1)
+        if (wallet.length === 27) { // Uphold wallet length
+          wallet = wallet.split('.').join('-')
+        } else {
+          return
+        }
+      }
 
       pollCheckInterval = setInterval(() => pollForSavedContent('/data/wallets.json', wallet, 'objKeyExist', () => {
         transitionWidget(commenterFlowHandleWalletSuccess);
       }, handleLookupError), 1000);
       commenterFlowSubmitWallet()
-    }
-  }]
 
+    })
+  }
 }
+
 
 let currentContents = startingContents; // Global content state
 
@@ -178,25 +192,29 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
         if (data[desiredData.key] === desiredData.value) {
           clearInterval(pollCheckInterval)
           success()
+        } else {
+          throw new Error('no object found')
         }
       }
       if (dataFormat === 'objKeyExist') {
-        if (data[desiredData]) {
+        let results = data.filter(record => record[desiredData])
+        if (results.length > 0) {
           clearInterval(pollCheckInterval)
-          success(data[desiredData])
+          success(results)
+        } else {
+          throw new Error('no object key')
         }
       }
 
     }
   } catch (e) {
     clearInterval(pollCheckInterval)
-    error()
+    console.error(e)
   }
 }
 
 const commenterFlowHandleWalletSuccess = {
-  para: `Wowzers!<br/>
-    We have received your wallet!<br/>
+  para: `We have received your wallet!<br/>
     You can go ahead and close this window now. If an author chooses to highlight your comment, we will use the wallet you submitted to share some of the page's revenue with you. How's that?!
     `,
   buttons: [closeButton]
@@ -260,18 +278,19 @@ function insertContent() { // Runs once at the beginning
         contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
       }
       postMessage(message)
-      pollCheckInterval = setInterval(() => pollForSavedContent(`/data/${slug}-authors.json`, sessionUUID, 'objKeyExist', (data) => {
+      pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
+        const uid = data[0][sessionUUID]
         let newContents = {
           para: `Excellent :)<br/>
           Your CoralTalk ID has been stored on the server. Please click the button below to email it to Matt:<br/>
-          <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${data}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
-          Your coral ID: ${data}
-  
+          <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${uid}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
+          Your coral ID: ${uid}
+
           `,
           buttons: [closeButton]
         }
         updateGfwState({
-          coralUserId: data
+          coralUserId: uid
         })
         transitionWidget(newContents)
       }, handleLookupError), 1000);
@@ -283,7 +302,7 @@ function insertContent() { // Runs once at the beginning
 
   setMenuListeners()
   contentRoot.innerHTML = template(currentContents)
-  updateEventHandlers()
+  updateEventHandlers(currentContents)
 }
 
 function transitionWidget(someContents) {
@@ -294,14 +313,17 @@ function transitionWidget(someContents) {
   }
   currentContents = newContents
   contentRoot.innerHTML = template(currentContents)
-  updateEventHandlers()
+  updateEventHandlers(currentContents)
 }
 
-function updateEventHandlers() {
+function updateEventHandlers(currentContents) {
   currentContents.buttons.forEach(buttonMeta => {
     let button = document.querySelector(`#${buttonMeta.id}`)
     button.addEventListener('click', buttonMeta.go)
   })
+  if (currentContents.events) {
+    currentContents.events()
+  }
 
 }
 
@@ -405,21 +427,24 @@ async function getHighlightedComment() {
 
     if (authorCommentId) {
       try {
-        let response = await fetch(`{{externalServiceRootUrl}}/data/${slug}-chosen.json`);
+        let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
 
         if (response.ok) { // if HTTP-status is 200-299
           // get the response body (the method explained below)
           let data = await response.json();
-      
-          if (data.author_id === authorCommentId) {
-            document.querySelector('.highlighted-comment').removeAttribute('hidden')
-            let highlightedCommentBox = document.querySelector('.highlighted-comment-content')
-            highlightedCommentBox.innerHTML = data.chosen_comment.comment.body
+          if (data.length > 0) {
+            data = data[0] // Got multiple comments
+            if (data.author_id === authorCommentId) {
+              document.querySelector('.highlighted-comment').removeAttribute('hidden')
+              let highlightedCommentBox = document.querySelector('.highlighted-comment-content')
+              highlightedCommentBox.innerHTML = data.chosen_comment.comment.body
+            }
           }
+
         }
       }
       catch (error) {
-        console.error(error)
+        console.log(error)
       }
     }
   }

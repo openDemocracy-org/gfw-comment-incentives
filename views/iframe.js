@@ -12,6 +12,7 @@ function eventFire(el, etype) {
 }
 
 window.addEventListener("message", (event) => {
+ 
   if (event.origin !== "{{externalServiceRootUrl}}") {
     return;
   }
@@ -53,7 +54,6 @@ function addHighlightEvents() {
           let b1 = comment.innerHTML.split('<div>')[1]
           let b2 = b1.split('</div>')[0]
           let b3 = b2.split('<br>')[0]
-
           submitComment({ "event_name": "HIGHLIGHT_COMMENT", "commenter_comment": b3 })
         })
         comment.setAttribute('gotButton', true)

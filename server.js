@@ -4,11 +4,14 @@ const cors = require('cors')
 const express = require('express');
 const bodyParser = require('body-parser')
 const fs = require('fs');
+const MongoClient = require('mongodb').MongoClient;
 const SIGNING_SECRET = "empsec_fa0e94fca0c13666c96f01c09b3c3b4673e1bd37289d848411519f3c5f46eb81f610d0";
 const crypto = require("crypto");
 // Constants
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
+const mongoUrl = 'mongodb://srv-captain--coral-mongo:27017';
+
 // App
 const app = express();
 const nunjucks = require('nunjucks');
@@ -20,6 +23,17 @@ nunjucks.configure('views', {
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.raw({ type: "application/json" }))
+app.use(express.static('public'))
+
+const mongoClient = new MongoClient(mongoUrl, { useUnifiedTopology: true });
+
+// Initialize connection once
+mongoClient.connect(function (err) {
+    if (err) throw err;
+    // Start the application after the database connection is ready
+    app.listen(PORT, HOST);
+});
+
 
 // START Templating code just for POC
 const slashes = require("connect-slashes");
@@ -37,7 +51,7 @@ function createHash(str) {
 app.get('/articles/*', slashes(), function (req, res) {
 
     let protocol = process.env.PROTOCOL || 'https://'
-    
+
     let pageSlug = req.originalUrl
     let coralAuthorId = req.query.caid
     if (coralAuthorId) {
@@ -77,55 +91,56 @@ app.get('/assets/iframe.js', function (req, res) {
     });
 })
 
+app.get('/data/wallets.json', async function (req, res) {
+    const docs = await getAllDocs('wallets')
+    res.json(docs)
+})
+
+app.get('/data/authors/*', async function (req, res) {
+    const slug = req.originalUrl.split('/data/authors/')[1].split('.json')[0]
+    const docs = await getAllDocs(`${slug}-authors`)
+    res.json(docs)
+})
+
+app.get('/data/chosen/*', async function (req, res) {
+    const slug = req.originalUrl.split('/data/chosen/')[1].split('.json')[0]
+    const docs = await getAllDocs(`${slug}-chosen`)
+    res.json(docs)
+})
 
 
-function handleHighlightedComment(comment, sentDetails) {
+async function handleHighlightedComment(comment, sentDetails) {
     const highlightedCommentCandidate = {
         author_id: comment.author.id,
         commenter_id: sentDetails.commenter_id
     }
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
-    fs.readFile(`public/data/${storySlug}-comments.json`, 'utf-8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file from disk: ${err}`);
-            // TODO handle error
-        } else {
-            // parse JSON string to JSON object
-            const contents = JSON.parse(data);
-            const chosenComment = contents.filter(comment => comment.comment.body.includes(sentDetails.commenter_comment.substr(1, 20)))
-            highlightedCommentCandidate.chosen_comment = chosenComment[0]
-            let fileName = `public/data/${storySlug}-chosen.json`
-            createOrUpdateFile(fileName, 'object', highlightedCommentCandidate)
 
-        }
-    });
+    let allComments = await getAllDocs(`${storySlug}-comments`)
+    const chosenComment = allComments.filter(comment => comment.comment.body.includes(sentDetails.commenter_comment.substr(1, 20)))
+    highlightedCommentCandidate.chosen_comment = chosenComment[0]
+    let fileName = `${storySlug}-chosen`
+    addToDb(fileName, highlightedCommentCandidate);
 }
 
 
 function handleAuthorCandidate(comment, sentDetails) {
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
-
     let toStore = {
-        key: sentDetails.uuid,
-        value: comment.author.id
+        [sentDetails.uuid]: comment.author.id
     }
-
-    let fileName = `public/data/${storySlug}-authors.json`;
-    createOrUpdateFile(fileName, 'objectKey', toStore);
+    let fileName = `${storySlug}-authors`;
+    addToDb(fileName, toStore);
 
 }
 
 function handleNewWallet(comment, sentDetails) {
-
-    let fileName = `public/data/wallets.json`;
     let toStore = {
-        key: sentDetails.wallet,
-        value: comment.author.id
+        [sentDetails.wallet]: comment.author.id
     }
-    createOrUpdateFile(fileName, 'objectKey', toStore)
-
+    addToDb('wallets', toStore)
 }
 
 function getStoryUrlFromComment(reqBody) {
@@ -147,7 +162,6 @@ app.post("/handle-comment", (req, res) => {
         let b2 = b1.split('</div>')[0]
         let b3 = b2.split('<br>')[0]
         let sentJson = JSON.parse(b3)
-        console.log(sentJson)
         if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
             handleHighlightedComment(req.body, sentJson)
             res.json({ status: 'REJECTED' });
@@ -162,67 +176,30 @@ app.post("/handle-comment", (req, res) => {
         }
 
     } catch (e) {
-        createOrUpdateFile(`public/data/${storySlug}-comments.json`, 'array', req.body)
+        addToDb(`${storySlug}-comments`, req.body)
         res.json({ received: true });
     }
 
 });
 
 app.post('/create-story', (req, res) => {
-
     // Possible DB config here in future
-
 })
 
-
-function createOrUpdateFile(fileName, dataType, content) {
-
-    function writeToFile(fileExists, data) {
-        // parse JSON string to JSON object
-        let contents;
-
-        if (fileExists) {
-            contents = JSON.parse(data);
-        } else {
-            if (dataType === 'array') {
-                contents = []
-            } else {
-                contents = {}
-            }
-        }
-
-        if (dataType === 'array') {
-            contents.push(content) // push array value
-        } else if (dataType === 'objectKey') {
-            contents[content.key] = content.value // add object key
-        } else {
-            contents = content // update whole object
-        }
-
-        // write new data back to the file
-        fs.writeFile(fileName, JSON.stringify(contents, null, 4), (err) => {
-            if (err) {
-                console.log(`Error writing file: ${err}`);
-            }
-        });
-    }
-
-    fs.readFile(fileName, 'utf-8', (err, data) => {
-        if (err) {
-            let fileExists = false;
-            writeToFile(fileExists)
-
-        } else {
-            let fileExists = true;
-            writeToFile(fileExists, data)
-        }
-    });
+async function addToDb(collection, content) {
+    const db = mongoClient.db('gfw-service')
+    const result = await db.collection(collection).insertOne(content)
 }
 
+async function getAllDocs(collection) {
+    const db = mongoClient.db('gfw-service')
+    let docs = []
+    const cursor = db.collection(collection).find({});
+    while (await cursor.hasNext()) {
+        const doc = await cursor.next();
+        docs.push(doc)
+    }
+    return docs
+}
 
-
-
-app.use(express.static('public'))
-
-app.listen(PORT, HOST);
 console.log(`Running on http://${HOST}:${PORT}`);
