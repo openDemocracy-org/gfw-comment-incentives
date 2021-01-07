@@ -457,8 +457,7 @@ function handleCoralReady() {
   coralReadyActions.forEach((action) => action())
 }
 
-getHighlightedComment()
-checkForLoggedInUser()
+
 
 function clientHandleCoralEvent(events) {
 
@@ -480,3 +479,43 @@ function clientHandleCoralEvent(events) {
   });
 }
 
+function startRevShare() {
+  let monetizationTag = document.querySelector('meta[name=monetization]')
+  let odWalletAddress = monetizationTag.getAttribute('content')
+  let authorWalletAddress = document.querySelector('meta[name=author_wallet]').getAttribute('content')
+
+  // Define your revenue share here.
+  // If these weights add to 100 then they represent the percent each pointer gets.
+  const pointers = {
+    [`${odWalletAddress}`]: 50,
+    [`${authorWalletAddress}`]: 50
+  }
+
+  function pickPointer() {
+    const sum = Object.values(pointers).reduce((sum, weight) => sum + weight, 0)
+    let choice = Math.random() * sum
+
+    for (const pointer in pointers) {
+      const weight = pointers[pointer]
+      if ((choice -= weight) <= 0) {
+        return pointer
+      }
+    }
+  }
+
+  if (authorWalletAddress && odWalletAddress) {
+    monetizationTag.remove()
+    const newMonetizationTag = document.createElement('meta')
+    newMonetizationTag.name = 'monetization'
+    newMonetizationTag.content = pickPointer()
+    document.head.appendChild(newMonetizationTag)
+  }
+}
+window.addEventListener('load', () => {
+  getHighlightedComment()
+  checkForLoggedInUser()
+  if (document.monetization) { // only run if user has a paying wallet
+    startRevShare()
+  }
+
+})
