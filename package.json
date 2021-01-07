@@ -2,7 +2,7 @@
   "name": "comment-incentives",
   "version": "1.0.0",
   "description": "",
-  "main": "server-service.js",
+  "main": "server-fake-site.js",
   "scripts": {
     "start": "node server-service.js",
     "start:fake-site": "node server-fake-site.js",
