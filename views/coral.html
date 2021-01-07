@@ -1,11 +1,10 @@
 {% extends 'article.html' %}
 {% block coral %}
 
-<div id="highlighted-comment"></div>
 <div id="gfw-menu-container"></div>
 <div id="gfw-widget"></div>
 <div id="coral_thread"></div>
-<script src="{{pageRootUrl}}/assets/client.js"></script>
+<script src="{{serviceRootUrl}}/assets/client.js"></script>
 <script data-cfasync="false"
     src="https://www.opendemocracy.net/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
 <script type="text/javascript">
@@ -16,24 +15,7 @@
         s.defer = true;
         s.onload = function () {
             Coral.createStreamEmbed({
-                events: function (events) {
-                    events.onAny(function (eventName, data) {
-                        if (eventName === 'ready') {
-                            handleCoralReady()
-                        }
-                        if (eventName === 'signedIn' && gfwCommentsActive) {
-                            gfwGotSignedInUser({
-                                loggedIn: true
-                            });
-                        }
-                        if (eventName === 'signOut.success') {
-                            gfwGotSignedOutUser();
-                        }
-                        if (eventName === 'createComment.success') {
-                            //my_event_tracker.send('createComment', data);
-                        }
-                    });
-                },
+                events: clientHandleCoralEvent,
                 id: "coral_thread",
                 autoRender: true,
                 rootURL: '{{coralRootUrl}}',

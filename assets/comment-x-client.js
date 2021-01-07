@@ -165,8 +165,6 @@ const handleLookupError = () => {
   alert('Lookup failed') // TODO
 }
 
-
-
 const commenterFlowSubmitWallet = () => {
   let newContents = {
     para: `Excellent :)<br/>
@@ -186,7 +184,6 @@ const commenterFlowSubmitWallet = () => {
 async function pollForSavedContent(path, desiredData, dataFormat, success, error) {
   try {
     let response = await fetch(`{{externalServiceRootUrl}}${path}`);
-
     if (response.ok) { // if HTTP-status is 200-299
       // get the response body (the method explained below)
       let data = await response.json();
@@ -205,6 +202,8 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
           clearInterval(pollCheckInterval)
           success(results)
         } else {
+          clearInterval(pollCheckInterval)
+          error('wallet not found')
           throw new Error('no object key')
         }
       }
@@ -460,4 +459,24 @@ function handleCoralReady() {
 
 getHighlightedComment()
 checkForLoggedInUser()
+
+function clientHandleCoralEvent(events) {
+
+  events.onAny(function (eventName, data) {
+    if (eventName === 'ready') {
+      handleCoralReady()
+    }
+    if (eventName === 'signedIn' && gfwCommentsActive) {
+      gfwGotSignedInUser({
+        loggedIn: true
+      });
+    }
+    if (eventName === 'signOut.success') {
+      gfwGotSignedOutUser();
+    }
+    if (eventName === 'createComment.success') {
+      //my_event_tracker.send('createComment', data);
+    }
+  });
+}
 

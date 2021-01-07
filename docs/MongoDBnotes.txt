@@ -1,0 +1,17 @@
+# MongoDB notes
+
+To connect once and maintain connection or connect on demand?
+
+https://stackoverflow.com/questions/38693792/is-it-necessary-to-open-mongodb-connection-every-time-i-want-to-work-with-the-db
+
+But main code maintainer says open it once and reuse the DB object:
+
+https://stackoverflow.com/a/54294317/14794141
+
+To ORM or not to ORM?
+
+Everyone else uses Mongoose, the main ORM for MongoDB - all the tutorials use it. But we don't want to define a schema as this will even more tightly couple us to Coral Talk. We don't want our schema to need updating. Therefore a standard MongoDB connection is what we want:
+
+https://stackoverflow.com/questions/52426667/how-to-use-mongoclient-connect-with-express
+More notes:
+https://www.xspdf.com/resolution/10108170.html

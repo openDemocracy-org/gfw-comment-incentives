@@ -13,9 +13,6 @@ function eventFire(el, etype) {
 
 window.addEventListener("message", (event) => {
  
-  if (event.origin !== "{{externalServiceRootUrl}}") {
-    return;
-  }
   if (event.data.contents) {
     if (AllowedServerEvents.includes(event.data.contents.event_name)) {
       let comment = event.data.contents
