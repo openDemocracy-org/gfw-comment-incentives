@@ -30,7 +30,6 @@ const styles = () => {
     #gfw-comments {
         overflow-x: hidden;
         overflow-y: auto; 
-        padding-bottom: 5rem;
         margin-bottom: 2rem;
     }
     #gfw-comments h1 {
@@ -52,8 +51,7 @@ const styles = () => {
       margin-top: 0;
       cursor: pointer;
       display: inline-block;
-      margin-right: 0.5rem;
-      text-decoration: underline;
+      margin-right: 0.5rem; 
       letter-spacing: 1px;
       font-size: .93333rem;
       text-transform: uppercase;
@@ -67,19 +65,32 @@ const styles = () => {
 
     #gfw-comments p {
       margin-bottom: 1rem;
+      line-height: 1.47;
+      padding: 0 2rem;
     }
     #gfw-comments button:hover,
     #gfw-comments .rich-text a:hover,
     #gfw-comments a:hover {
-      color: #000;
-      background: inherit;
-      border: inherit;
+
     }
-    #gfw-menu-container {
+    #gfw-menu {
+      background: none;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+
+    #btn-claim-article { 
+    }
+
+    #gfw-menu-container {      
+      position: absolute;
+      right: 2.66667rem;
       float: right;
+      width: 100%;
+      text-align: right;
     }
     #gfw-menu-contents {
-      position: absolute;
+      width: 100%;
     }
     `
 }
@@ -121,11 +132,8 @@ function closeWidget() {
 }
 
 let startingContents = {
-  para: `Hello :)<br/>
-If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author.<br/>
-To setup your wallet, please follow the <a href=''>instructions here</a>
-Please enter your wallet address below:<br/>
-<form id="wallet"><input type="text" name="wallet" /><button id="submit-wallet">Submit wallet</button></form><br/>   
+  para: `If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author. To setup your wallet, please follow the <a href=''>instructions here</a>. Please enter your wallet address below:<br/>
+<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><br/>   
 `,
   buttons: [],
   events: function () {
@@ -167,9 +175,7 @@ const handleLookupError = () => {
 
 const commenterFlowSubmitWallet = () => {
   let newContents = {
-    para: `Excellent :)<br/>
-      In the box at the bottom is some code. We need you to submit it as a comment (Matt - this will be done via JS in future). Please paste it into the comment box and submit.<br/>
-      <span class="loading">Waiting for you to submit... page will update shortly thereafter...</span>
+    para: `<span class="loading">Checking for page will update shortly thereafter...</span>
       `,
     events: null,
     buttons: [resetButton]
@@ -225,11 +231,10 @@ const commenterFlowHandleWalletSuccess = {
 
 const menuTemplate = () => {
   return ` 
-    <button id="gfw-menu" aria-haspopup="true" aria-expanded="false">GfW Options
-        <span aria-hidden="true">&#x25be</span>
+    <button id="gfw-menu" aria-haspopup="true" aria-expanded="false">⚙     
     </button>
     <div id="gfw-menu-contents" role="menu" hidden="hidden">
-        <button role="menuitem" id="btn-claim-article" tabindex="-1">Claim article authorship</button>
+        <button role="menuitem" id="btn-claim-article" class="btn btn-primary" tabindex="-1">Claim article authorship</button>
     </div> 
 `
 }
@@ -237,8 +242,8 @@ const menuTemplate = () => {
 const template = (content) => {
   return `
 <section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary ${content.class ? content.class : ''}">
-    <h1 class="sidebar__heading">Comment Incentives</h1>
-    <p class="rich-text">${content.para}</p>
+    <h1 class="sidebar__heading mailing-list__sub-title">Comment Incentives</h1>
+    <p class="rich-text mailing-list__text">${content.para}</p>
     ${content.buttons.map((button) => `<button class="sidebar__link" id="${button.id}">${button.label}</button>`)}
     </section>
     `
@@ -276,7 +281,7 @@ function insertContent() { // Runs once at the beginning
     // Claim article authorship
     let btnClaimArticle = document.querySelector('#btn-claim-article')
     btnClaimArticle.addEventListener('click', function () {
-
+      toggleMenu()
       let message = {
         contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
       }
@@ -284,9 +289,7 @@ function insertContent() { // Runs once at the beginning
       pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
         const uid = data[0][sessionUUID]
         let newContents = {
-          para: `Excellent :)<br/>
-          Your CoralTalk ID has been stored on the server. Please click the button below to email it to Matt:<br/>
-          <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${uid}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
+          para: `Your CoralTalk ID has been stored on the server. Please click the link to email it to Matt: <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${uid}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
           Your coral ID: ${uid}
 
           `,

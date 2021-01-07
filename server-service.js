@@ -13,7 +13,7 @@ const crypto = require("crypto");
 // Constants
 const SERVICE_PORT = process.env.SERVICE_PORT || 8080;
 const SERVICE_HOST = process.env.SERVICE_HOST || '0.0.0.0';
-const MONGO_URL = mongoProductionUrl;
+const MONGO_URL = mongoUrl;
 
 // App
 
