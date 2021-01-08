@@ -86,7 +86,7 @@ const styles = () => {
       position: absolute;
       right: 2.66667rem;
       float: right;
-      width: 100%;
+      width: 50%;
       text-align: right;
     }
     #gfw-menu-contents {
@@ -426,6 +426,34 @@ function getSlugFromUrl(urlString) {
 }
 
 // Get highlighted comment
+
+
+const highlightedCommentTemplate = (content) => {
+  return `
+  <div class="related-story highlighted-comment">
+  <h3 class="related-story-suggestion">On <span class="highlighted-comment-date">22-09-2020</span>
+      <span class="highlighted-comment-author">${content.commenter_name}</span> commented:</h3>
+
+  <div class="related-story-container">
+      <div class="article-list article-list--related-story no-image">
+          <div><a class="article-list__title" href="#gfw-menu-container">
+                  ${content.chosen_comment.comment.body}
+              </a></div>
+          <div class="related-story-meta">
+              <p>
+                  This comment has been highlighted by article author ${content.author_name} and the
+                  commenter is enjoying a small percentage of this page's revenue. <a
+                      style="font-size: inherit; color: inherit; display: inherit;"
+                      class="article-list__title" href="#gfw-menu-container">Find out more</a></p>
+          </div>
+      </div>
+  </div>
+</div>
+  `
+}
+
+
+
 async function getHighlightedComment() {
   let meta = document.querySelector('[name="author_comment_id"]')
   if (meta) {
@@ -435,15 +463,14 @@ async function getHighlightedComment() {
       try {
         let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
 
-        if (response.ok) { // if HTTP-status is 200-299
-          // get the response body (the method explained below)
+        if (response.ok) {
           let data = await response.json();
           if (data.length > 0) {
             data = data[0] // Got multiple comments
             if (data.author_id === authorCommentId) {
-              document.querySelector('.highlighted-comment').removeAttribute('hidden')
-              let highlightedCommentBox = document.querySelector('.highlighted-comment-content')
-              highlightedCommentBox.innerHTML = data.chosen_comment.comment.body
+
+              let highlightedCommentBox = document.querySelector('.highlighted-c')
+              highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
             }
           }
 
@@ -482,7 +509,7 @@ function clientHandleCoralEvent(events) {
   });
 }
 
-function startRevShare() {
+async function startRevShare() {
   let monetizationTag = document.querySelector('meta[name=monetization]')
   let odWalletAddress = monetizationTag.getAttribute('content')
   let authorWalletAddress = document.querySelector('meta[name=author_wallet]').getAttribute('content')
