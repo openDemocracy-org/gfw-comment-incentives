@@ -6,14 +6,14 @@ const bodyParser = require('body-parser');
 const MongoClient = require('mongodb').MongoClient;
 
 // Cannot get env working for these paths
-const mongoUrl = 'mongodb://localhost:27017'; 
+
 const mongoProductionUrl = 'mongodb://srv-captain--coral-mongo:27017';
-const SIGNING_SECRET = "empsec_fa0e94fca0c13666c96f01c09b3c3b4673e1bd37289d848411519f3c5f46eb81f610d0";
-const crypto = require("crypto");
+ 
+ 
 // Constants
 const SERVICE_PORT = process.env.SERVICE_PORT || 8080;
 const SERVICE_HOST = process.env.SERVICE_HOST || '0.0.0.0';
-const MONGO_URL = mongoProductionUrl;
+const MONGO_URL = process.env.MONGO;
 
 // App
 
@@ -80,7 +80,9 @@ app.get('/data/chosen/*', async function (req, res) {
 async function handleHighlightedComment(comment, sentDetails) {
     const highlightedCommentCandidate = {
         author_id: comment.author.id,
-        commenter_id: sentDetails.commenter_id
+        commenter_name: sentDetails.commenter_name,
+        author_name: "emily",
+        timestamp: sentDetails.timestamp
     }
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
@@ -156,7 +158,11 @@ app.post('/create-story', (req, res) => {
 
 async function addToDb(collection, content) {
     const db = mongoClient.db('gfw-service')
-    const result = await db.collection(collection).insertOne(content)
+    const doc = {
+        author_id: content.author_id
+      };
+    const deleteResult = await db.collection(collection).deleteMany(doc)
+    await db.collection(collection).insertOne(content)
 }
 
 async function getAllDocs(collection) {

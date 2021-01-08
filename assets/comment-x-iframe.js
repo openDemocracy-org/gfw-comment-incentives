@@ -40,7 +40,7 @@ function addHighlightEvents() {
 
 
   setInterval(function () {
-    let commentItems = document.querySelectorAll('.coral-comment-content')
+    let commentItems = document.querySelectorAll('.coral-comment')
     commentItems.forEach((comment) => {
       let gotButton = comment.getAttribute('gotButton')
       if (!gotButton) {
@@ -48,16 +48,15 @@ function addHighlightEvents() {
         buttonElement.innerHTML = 'Highlight comment'
         comment.insertAdjacentElement("afterend", buttonElement)
         buttonElement.addEventListener('click', function () {
-          let b1 = comment.innerHTML.split('<div>')[1]
+          let commenter_name = comment.querySelector('.coral-comment-username span').innerHTML;
+          let timestamp = comment.querySelector('.coral-comment-timestamp').getAttribute('datetime');
+          let b1 = comment.querySelector('.coral-comment-content').innerHTML.split('<div>')[1]
           let b2 = b1.split('</div>')[0]
           let b3 = b2.split('<br>')[0]
-          submitComment({ "event_name": "HIGHLIGHT_COMMENT", "commenter_comment": b3 })
+          submitComment({ "event_name": "HIGHLIGHT_COMMENT", "commenter_comment": b3, "timestamp": timestamp, "commenter_name": commenter_name })
         })
         comment.setAttribute('gotButton', true)
       }
-
-
-
 
     })
   }, 1000)
