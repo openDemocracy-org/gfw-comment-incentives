@@ -1,5 +1,10 @@
 const AllowedServerEvents = ['AUTHOR_CANDIDATE', 'NEW_WALLET', 'HIGHLIGHT_COMMENT']
-const AllowedDomEvents = ['INIT_HIGHLIGHT_COMMENTS']
+const AllowedDomEvents = ['INIT_HIGHLIGHT_COMMENTS', 'PING']
+
+let coralRecentlyLoaded = true;
+setTimeout(function () {
+  coralRecentlyLoaded = false
+}, 1000)
 
 function eventFire(el, etype) {
   if (el.fireEvent) {
@@ -12,14 +17,22 @@ function eventFire(el, etype) {
 }
 
 window.addEventListener("message", (event) => {
- 
+
   if (event.data.contents) {
-    if (AllowedServerEvents.includes(event.data.contents.event_name)) {
+    let eventName = event.data.contents.event_name
+    if (AllowedDomEvents.includes(eventName) && eventName === 'PING') {
+      if (coralRecentlyLoaded) {
+        event.source.postMessage("PONG", event.origin);
+      }
+      return;
+    }
+
+    if (AllowedServerEvents.includes(eventName)) {
       let comment = event.data.contents
       submitComment(comment)
     }
-    if (AllowedDomEvents.includes(event.data.contents.event_name)) {
-      addHighlightEvents()
+    if (AllowedDomEvents.includes(eventName)) {
+      addHighlightEvents(event)
     }
   }
 
@@ -36,7 +49,7 @@ function submitComment(comment) {
   }, 10)
 }
 
-function addHighlightEvents() {
+function addHighlightEvents(triggeringEvent) {
 
 
   setInterval(function () {
@@ -48,17 +61,20 @@ function addHighlightEvents() {
         buttonElement.innerHTML = 'Highlight comment'
         comment.insertAdjacentElement("afterend", buttonElement)
         buttonElement.addEventListener('click', function () {
-          let commenter_name = comment.querySelector('.coral-comment-username span').innerHTML;
-          let timestamp = comment.querySelector('.coral-comment-timestamp').getAttribute('datetime');
-          let b1 = comment.querySelector('.coral-comment-content').innerHTML.split('<div>')[1]
-          let b2 = b1.split('</div>')[0]
-          let b3 = b2.split('<br>')[0]
-          submitComment({ "event_name": "HIGHLIGHT_COMMENT", "commenter_comment": b3, "timestamp": timestamp, "commenter_name": commenter_name })
+          triggeringEvent.source.postMessage("SHOW_LOADING_ANIMATION", triggeringEvent.origin);
+          setTimeout(function () { // wait for the loading animation to kick in
+            let commenter_name = comment.querySelector('.coral-comment-username span').innerHTML;
+            let timestamp = comment.querySelector('.coral-comment-timestamp').getAttribute('datetime');
+            let b1 = comment.querySelector('.coral-comment-content').innerHTML.split('<div>')[1]
+            let b2 = b1.split('</div>')[0]
+            let b3 = b2.split('<br>')[0]
+            submitComment({ "event_name": "HIGHLIGHT_COMMENT", "commenter_comment": b3, "timestamp": timestamp, "commenter_name": commenter_name })
+
+          }, 100)
         })
         comment.setAttribute('gotButton', true)
       }
 
     })
   }, 1000)
-
 } 

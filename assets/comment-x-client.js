@@ -88,9 +88,44 @@ const styles = () => {
       float: right;
       width: 50%;
       text-align: right;
+      z-index:10;
     }
     #gfw-menu-contents {
       width: 100%;
+    }
+    #loading[hidden=hidden] {
+      display: none;
+    }
+    #coral_thread_container {
+      position: relative;
+      min-height: 723px;
+    }
+    #loading {
+      position: absolute;
+      width: 100%;
+      height: 3000px;
+      left: 0;
+      top: 0;
+      right: 0;
+      background: white;
+      text-align: center;
+      padding-top: 10rem;
+      z-index: 99999;
+    }
+    #loading {
+      color: inherit;
+      background: linear-gradient(100deg, #eceff1 30%, #f6f7f8 50%, #eceff1 70%);
+      background-size: 400%;
+      animation: loading 1.2s ease-in-out infinite;
+    }
+    
+    @keyframes loading {
+      0% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0 50%;
+      }
     }
     `
 }
@@ -185,6 +220,7 @@ const commenterFlowSubmitWallet = () => {
   }
   postMessage(message)
   transitionWidget(newContents)
+  showLoadingAnimation()
 }
 
 async function pollForSavedContent(path, desiredData, dataFormat, success, error) {
@@ -286,6 +322,7 @@ function insertContent() { // Runs once at the beginning
         contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
       }
       postMessage(message)
+      showLoadingAnimation()
       pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
         const uid = data[0][sessionUUID]
         let newContents = {
@@ -548,4 +585,41 @@ window.addEventListener('load', () => {
     startRevShare()
   }
 
+})
+
+
+
+
+function showLoadingAnimation() {
+  let loading = document.querySelector('#loading')
+  loading.removeAttribute('hidden')
+  let ping = setInterval(() => {
+    let message = {
+      contents: { "event_name": "PING", }
+    }
+    let coralWindow = getCoralWindow()
+    coralWindow.postMessage(message, "{{coralRootUrl}}")
+  }, 50);
+
+  const listenForResponse = (event) => {
+    if (event.origin !== "{{coralRootUrl}}")
+      return;
+    if (event.data === "PONG") {
+      setTimeout(function () {
+        loading.setAttribute('hidden', 'hidden')
+      }, 1000)
+      handleCoralReady()
+
+      window.removeEventListener("message", listenForResponse)
+      clearInterval(ping)
+    }
+  }
+  window.addEventListener("message", listenForResponse);
+}
+window.addEventListener("message", (event) => {
+  if (event.origin !== "{{coralRootUrl}}")
+    return;
+  if (event.data === "SHOW_LOADING_ANIMATION") {
+    showLoadingAnimation()
+  }
 })
