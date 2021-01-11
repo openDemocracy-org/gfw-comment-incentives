@@ -590,7 +590,7 @@ window.addEventListener('load', () => {
 
 
 
-function showLoadingAnimation() {
+function showLoadingAnimation(cb) {
   let loading = document.querySelector('#loading')
   loading.removeAttribute('hidden')
   let ping = setInterval(() => {
@@ -605,6 +605,9 @@ function showLoadingAnimation() {
     if (event.origin !== "{{coralRootUrl}}")
       return;
     if (event.data === "PONG") {
+      if (cb) {
+        cb()
+      }
       setTimeout(function () {
         loading.setAttribute('hidden', 'hidden')
       }, 1000)
@@ -616,10 +619,20 @@ function showLoadingAnimation() {
   }
   window.addEventListener("message", listenForResponse);
 }
+
+
+
+
+
 window.addEventListener("message", (event) => {
   if (event.origin !== "{{coralRootUrl}}")
     return;
-  if (event.data === "SHOW_LOADING_ANIMATION") {
-    showLoadingAnimation()
+  if (event.data === "START_HIGHLIGHT_COMMENT") {
+    showLoadingAnimation(function () {
+      document.getElementById('highlighted-comment').scrollIntoView({
+        behavior: 'smooth'
+      });
+      getHighlightedComment();
+    })
   }
 })
