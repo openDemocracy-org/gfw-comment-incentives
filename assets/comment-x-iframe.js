@@ -40,7 +40,7 @@ window.addEventListener("message", (event) => {
 
 function submitComment(comment) {
   let commentWindow = document.querySelector('#comments-postCommentForm-field')
-  commentWindow.innerHTML = `<div>${JSON.stringify(comment)}<br/></div>`
+  commentWindow.innerHTML = `<div>${JSON.stringify(comment)}<br></div>`
   let form = document.querySelector('#comments-postCommentForm-form')
   setTimeout(function () {
     eventFire(form, 'submit')
@@ -65,11 +65,17 @@ function addHighlightEvents(triggeringEvent) {
           setTimeout(function () { // wait for the loading animation to kick in
             let commenter_name = comment.querySelector('.coral-comment-username span').innerHTML;
             let timestamp = comment.querySelector('.coral-comment-timestamp').getAttribute('datetime');
-            let b1 = comment.querySelector('.coral-comment-content').innerHTML.split('<div>')[1]
-            let b2 = b1.split('</div>')[0]
-            let b3 = b2.split('<br>')[0]
-            submitComment({ "event_name": "HIGHLIGHT_COMMENT", "commenter_comment": b3, "timestamp": timestamp, "commenter_name": commenter_name })
+            let comment_id = comment.getAttribute('id')
+            let commentHTML = comment.querySelector('.coral-comment-content').innerHTML
+            let commentWithMeta = {
+              "event_name": "HIGHLIGHT_COMMENT",
+              "commenter_comment": commentHTML,
+              "timestamp": timestamp,
+              "commenter_name": commenter_name,
+              "comment_id": comment_id
+            }
 
+            submitComment(commentWithMeta)
           }, 100)
         })
         comment.setAttribute('gotButton', true)

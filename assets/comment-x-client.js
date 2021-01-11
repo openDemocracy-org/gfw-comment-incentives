@@ -174,7 +174,7 @@ let startingContents = {
   events: function () {
     let input = document.querySelector('input[name=wallet]')
     let walletSubmitForm = document.querySelector('form#wallet')
-    walletSubmitForm.addEventListener('submit', function (evt) {
+    walletSubmitForm && walletSubmitForm.addEventListener('submit', function (evt) {
       evt.preventDefault()
       wallet = input.value
       if (wallet === '') {
@@ -474,7 +474,7 @@ const highlightedCommentTemplate = (content) => {
   <div class="related-story-container">
       <div class="article-list article-list--related-story no-image">
           <div><a class="article-list__title" href="#gfw-menu-container">
-                  ${content.chosen_comment.comment.body}
+                  ${content.commenter_comment}
               </a></div>
           <div class="related-story-meta">
               <p>

@@ -5,19 +5,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const MongoClient = require('mongodb').MongoClient;
 
-// Cannot get env working for these paths
-
-const mongoProductionUrl = 'mongodb://srv-captain--coral-mongo:27017';
- 
- 
 // Constants
 const SERVICE_PORT = process.env.SERVICE_PORT || 8080;
 const SERVICE_HOST = process.env.SERVICE_HOST || '0.0.0.0';
 const MONGO_URL = process.env.MONGO;
 
 // App
-
-
 const app = express();
 
 const nunjucks = require('nunjucks');
@@ -58,12 +51,6 @@ app.get('/data/wallets.json', async function (req, res) {
     res.json(docs)
 })
 
-app.get('/data/comments/*', async function (req, res) {
-    const slug = req.originalUrl.split('/data/comments/')[1].split('.json')[0]
-    const docs = await getAllDocs(`${slug}-comments`)
-    res.json(docs)
-})
-
 app.get('/data/authors/*', async function (req, res) {
     const slug = req.originalUrl.split('/data/authors/')[1].split('.json')[0]
     const docs = await getAllDocs(`${slug}-authors`)
@@ -78,20 +65,15 @@ app.get('/data/chosen/*', async function (req, res) {
 
 
 async function handleHighlightedComment(comment, sentDetails) {
-    const highlightedCommentCandidate = {
+    const highlightedComment = {
         author_id: comment.author.id,
-        commenter_name: sentDetails.commenter_name,
-        author_name: "emily",
-        timestamp: sentDetails.timestamp
+        ...sentDetails
     }
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
 
-    let allComments = await getAllDocs(`${storySlug}-comments`)
-    const chosenComment = allComments.filter(comment => comment.comment.body.includes(sentDetails.commenter_comment.substr(1, 20)))
-    highlightedCommentCandidate.chosen_comment = chosenComment[0]
     let fileName = `${storySlug}-chosen`
-    addToDb(fileName, highlightedCommentCandidate);
+    addToDbReplaceAll(fileName, highlightedComment);
 }
 
 
@@ -126,12 +108,12 @@ function getSlugFromUrl(urlString) {
 app.post("/handle-comment", (req, res) => {
     let storyUrl = getStoryUrlFromComment(req.body)
     let storySlug = getSlugFromUrl(storyUrl)
-    try {
+   try {
         let body = req.body.comment.body
-        let b1 = body.split('<div>')[1]
-        let b2 = b1.split('</div>')[0]
-        let b3 = b2.split('<br>')[0]
-        let sentJson = JSON.parse(b3)
+
+        let b1 = body.slice(5)
+        let b2 = b1.slice(0, -10)
+        let sentJson = JSON.parse(b2)
         if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
             handleHighlightedComment(req.body, sentJson)
             res.json({ status: 'REJECTED' });
@@ -144,9 +126,8 @@ app.post("/handle-comment", (req, res) => {
         } else {
             throw new Error('Not in the list')
         }
-
     } catch (e) {
-        addToDb(`${storySlug}-comments`, req.body)
+        console.log(e)
         res.json({ received: true });
     }
 
@@ -156,12 +137,17 @@ app.post('/create-story', (req, res) => {
     // Possible DB config here in future
 })
 
-async function addToDb(collection, content) {
+async function addToDbReplaceAll(collection, content) {
     const db = mongoClient.db('gfw-service')
     const doc = {
         author_id: content.author_id
-      };
-    const deleteResult = await db.collection(collection).deleteMany(doc)
+    };
+    await db.collection(collection).deleteMany(doc)
+    await db.collection(collection).insertOne(content)
+}
+
+async function addToDb(collection, content) {
+    const db = mongoClient.db('gfw-service')
     await db.collection(collection).insertOne(content)
 }
 
