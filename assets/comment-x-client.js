@@ -192,7 +192,11 @@ let startingContents = {
         }
       }
 
-      pollCheckInterval = setInterval(() => pollForSavedContent('/data/wallets.json', wallet, 'objKeyExist', () => {
+      let walletLookup = {
+        wallet
+      }
+
+      pollCheckInterval = setInterval(() => pollForSavedContent('/data/all-wallets.json', walletLookup, 'objEq', () => {
         transitionWidget(commenterFlowHandleWalletSuccess);
       }, handleLookupError), 1000);
       commenterFlowSubmitWallet()
@@ -467,7 +471,7 @@ function getSlugFromUrl(urlString) {
 
 const highlightedCommentTemplate = (content) => {
   return `
-  <div class="related-story highlighted-comment">
+  <div class="related-story highlighted-comment" data-comment-id="${content.comment_id}">
   <h3 class="related-story-suggestion">On <span class="highlighted-comment-date">22-09-2020</span>
       <span class="highlighted-comment-author">${content.commenter_name}</span> commented:</h3>
 
@@ -505,8 +509,7 @@ async function getHighlightedComment() {
           if (data.length > 0) {
             data = data[0] // Got multiple comments
             if (data.author_id === authorCommentId) {
-
-              let highlightedCommentBox = document.querySelector('.highlighted-c')
+              let highlightedCommentBox = document.querySelector('#highlighted-comment')
               highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
             }
           }
@@ -549,34 +552,68 @@ function clientHandleCoralEvent(events) {
 async function startRevShare() {
   let monetizationTag = document.querySelector('meta[name=monetization]')
   let odWalletAddress = monetizationTag.getAttribute('content')
-  let authorWalletAddress = document.querySelector('meta[name=author_wallet]').getAttribute('content')
+  let authorId = document.querySelector('meta[name=author_comment_id]').getAttribute('content')
+  try {
+    let response = await fetch(`{{externalServiceRootUrl}}/data/wallets/${slug}.json?author=${authorId}`);
+    if (response.ok) {
+      let data = await response.json();
+      if (!data.gotWallet) {
+        console.log('GFW Got no wallets, defaulting to 100% oD revenue.')
+        return
+      }
+      let pointers;
+      if (data.authorWallet && data.commenterWallet) {
+        pointers = {
+          [`${odWalletAddress}`]: 45,
+          [`${data.authorWallet}`]: 45,
+          [`${data.commenterWallet}`]: 10
+        }
+        console.log('GFW Got wallets for author and commenter, 45 45 10.')
 
-  // Define your revenue share here.
-  // If these weights add to 100 then they represent the percent each pointer gets.
-  const pointers = {
-    [`${odWalletAddress}`]: 50,
-    [`${authorWalletAddress}`]: 50
+      } else if (data.authorWallet) {
+        pointers = {
+          [`${odWalletAddress}`]: 50,
+          [`${data.authorWallet}`]: 50
+        }
+        console.log('GFW Got wallet for author, 50 50.')
+      } else if (data.commenterWallet) {
+        pointers = {
+          [`${odWalletAddress}`]: 90,
+          [`${data.commenterWallet}`]: 10
+        }
+        console.log('GFW Got wallet for commenter, 90 10.')
+      }
+      console.log(pointers)
+      performCalculations(pointers)
+    }
+  } catch (e) {
+    console.log(e)
   }
 
-  function pickPointer() {
-    const sum = Object.values(pointers).reduce((sum, weight) => sum + weight, 0)
-    let choice = Math.random() * sum
+  function performCalculations(pointers) {
 
-    for (const pointer in pointers) {
-      const weight = pointers[pointer]
-      if ((choice -= weight) <= 0) {
-        return pointer
+    function pickPointer() {
+      const sum = Object.values(pointers).reduce((sum, weight) => sum + weight, 0)
+      let choice = Math.random() * sum
+
+      for (const pointer in pointers) {
+        const weight = pointers[pointer]
+        if ((choice -= weight) <= 0) {
+          return pointer
+        }
       }
     }
-  }
 
-  if (authorWalletAddress && odWalletAddress) {
     monetizationTag.remove()
     const newMonetizationTag = document.createElement('meta')
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
+
   }
+
+
+
 }
 window.addEventListener('load', () => {
   getHighlightedComment()
