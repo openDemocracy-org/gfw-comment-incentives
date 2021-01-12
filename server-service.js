@@ -40,16 +40,81 @@ app.get('/assets/client.js', function (req, res) {
     });
 })
 
+function getSlugFromUrl(req, path) {
+    return req.originalUrl.split(path)[1].split('.json')[0]
+}
+
 app.get('/assets/iframe.js', function (req, res) {
     res.render('comment-x-iframe.js', {
         externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
     });
 })
 
-app.get('/data/wallets.json', async function (req, res) {
+app.get('/data/all-wallets.json', async function (req, res) {
     const docs = await getAllDocs('wallets')
     res.json(docs)
 })
+
+app.get('/data/wallets/*', async function (req, res) {
+    const serviceDb = mongoClient.db('gfw-service')
+    let authorCoralId = null;
+    let commenterCoralId = null;
+
+    try {
+        const slug = req.originalUrl.split('/data/wallets/')[1].split('.json')[0]
+
+        authorCoralId = req.query.author;
+        const cursor = await serviceDb.collection(`${slug}-chosen`).find({ author_id: authorCoralId })
+
+        let docsHighlightedByAuthor = [];
+        while (await cursor.hasNext()) {
+            const doc = await cursor.next();
+            docsHighlightedByAuthor.push(doc)
+        }
+        if (docsHighlightedByAuthor.length > 0) { // Got at least one highlighted comment, let's get commenter ID
+
+            let firstHighlightedComment = docsHighlightedByAuthor[0]
+            let commentId = firstHighlightedComment.comment_id.split('comment-')[1]
+            const coralDb = mongoClient.db('coral')
+            const coralCursor = await coralDb.collection('comments').find({ id: commentId })
+            let coralDocs = [];
+            while (await coralCursor.hasNext()) {
+                const doc = await coralCursor.next()
+                coralDocs.push(doc)
+            }
+            if (coralDocs.length > 0) {
+                let highlightedComment = coralDocs[0]
+                commenterCoralId = highlightedComment.authorID;
+            }
+        }
+        getWallets(res, authorCoralId, commenterCoralId)
+    } catch (e) {
+        console.log(e)
+        res.send(e)
+    }
+
+    async function getWallets(res, authorId, commenterId) {
+
+        let commenterWalletDoc = null;
+        let authorWalletDoc = await getFirstDocById(serviceDb, 'wallets', authorId)
+        if (commenterId)
+            commenterWalletDoc = await getFirstDocById(serviceDb, 'wallets', commenterId)
+
+        let gotWallet = authorWalletDoc ? true : commenterWalletDoc ? true : false;
+
+        let response = {
+            gotWallet
+        }
+        if (authorWalletDoc)
+            response.authorWallet = authorWalletDoc.wallet
+        if (commenterWalletDoc)
+            response.commenterWallet = commenterWalletDoc.wallet
+
+        res.send(response)
+    }
+
+})
+
 
 app.get('/data/authors/*', async function (req, res) {
     const slug = req.originalUrl.split('/data/authors/')[1].split('.json')[0]
@@ -73,7 +138,10 @@ async function handleHighlightedComment(comment, sentDetails) {
     let storySlug = getSlugFromUrl(storyUrl)
 
     let fileName = `${storySlug}-chosen`
-    addToDbReplaceAll(fileName, highlightedComment);
+    const replace = {
+        author_id: comment.author.id
+    };
+    addToDbReplaceAll(fileName, highlightedComment, replace);
 }
 
 
@@ -85,14 +153,19 @@ function handleAuthorCandidate(comment, sentDetails) {
     }
     let fileName = `${storySlug}-authors`;
     addToDb(fileName, toStore);
-
 }
 
 function handleNewWallet(comment, sentDetails) {
     let toStore = {
-        [sentDetails.wallet]: comment.author.id
+        [sentDetails.wallet]: comment.author.id,
+        _id: comment.author.id,
+        wallet: sentDetails.wallet
     }
-    addToDb('wallets', toStore)
+    let toReplace = {
+        _id: comment.author.id,
+    }
+    console.log(toStore, toReplace)
+    addToDbReplaceAll('wallets', toStore, toReplace)
 }
 
 function getStoryUrlFromComment(reqBody) {
@@ -108,7 +181,7 @@ function getSlugFromUrl(urlString) {
 app.post("/handle-comment", (req, res) => {
     let storyUrl = getStoryUrlFromComment(req.body)
     let storySlug = getSlugFromUrl(storyUrl)
-   try {
+    try {
         let body = req.body.comment.body
 
         let b1 = body.slice(5)
@@ -137,12 +210,15 @@ app.post('/create-story', (req, res) => {
     // Possible DB config here in future
 })
 
-async function addToDbReplaceAll(collection, content) {
+async function addToDbReplaceAll(collection, content, replace) {
     const db = mongoClient.db('gfw-service')
-    const doc = {
-        author_id: content.author_id
-    };
-    await db.collection(collection).deleteMany(doc)
+
+    try {
+        await db.collection(collection).deleteMany(replace)
+    } catch (e) {
+        console.log(e)
+    }
+
     await db.collection(collection).insertOne(content)
 }
 
@@ -160,6 +236,16 @@ async function getAllDocs(collection) {
         docs.push(doc)
     }
     return docs
+}
+
+async function getFirstDocById(db, collection, id) {
+    const cursor = await db.collection(collection).find({ _id: id })
+    let docs = []
+    while (await cursor.hasNext()) {
+        const doc = await cursor.next()
+        docs.push(doc)
+    }
+    return docs[0]
 }
 
 console.log(`Running on http://${SERVICE_HOST}:${SERVICE_PORT}`);
