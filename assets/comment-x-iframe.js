@@ -68,8 +68,6 @@ function clearIntervals() {
 }
 
 function addHighlightEvents(triggeringEvent) {
-
-  console.log('adding highlight events')
   const highlightInterval = setInterval(function () {
     let commentItems = document.querySelectorAll('.coral-comment')
     commentItems.forEach((comment) => {
