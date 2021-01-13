@@ -486,12 +486,8 @@ function checkForLoggedInUser() {
     }
   }
 }
-
-
 function initHighlightForAuthor(currentState) {
-
   let customMessage;
-
   if (authorCommentId && currentState.coralUserId && authorCommentId === currentState.coralUserId) {
     // they are the author
     customMessage = 'Your Coral account has been verified as the author of this article. You can now use the highlight comment buttons in the comment thread to pick a highlighted comment';
@@ -513,17 +509,12 @@ function initHighlightForAuthor(currentState) {
   } else {
     return false
   }
-
   return newContents = {
     para: customMessage,
     hidden: false,
     buttons: [closeButton]
   }
-
-
-
 }
-
 
 function getCoralWindow(comment) {
   try {
@@ -586,14 +577,19 @@ const highlightedCommentTemplate = (content) => {
 
 
 async function getHighlightedComment() {
+  console.log(`Author comment ID: ${authorCommentId}`)
   if (authorCommentId) {
     try {
       let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
 
       if (response.ok) {
         let data = await response.json();
+        console.log(data)
         if (data.length > 0) {
-          data = data[0] // Got multiple comments
+          let chosenComment = data.filter(comment => comment.author_id === authorCommentId)
+          console.log(chosenComment)
+          data = chosenComment[0]
+          console.log(data)
           if (data.author_id === authorCommentId) {
             let highlightedCommentBox = document.querySelector('#highlighted-comment')
             highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
@@ -744,11 +740,14 @@ window.addEventListener("message", (event) => {
   if (event.origin !== "{{coralRootUrl}}")
     return;
   if (event.data === "START_HIGHLIGHT_COMMENT") {
+    console.log('GOT HIGHLIGHTED COMMENT ATTEMPT')
     showLoadingAnimation('Highlighting comment', function () {
       document.getElementById('highlighted-comment').scrollIntoView({
         behavior: 'smooth'
       });
+      console.log('scrolled, showing')
       getHighlightedComment();
     })
   }
+
 })
