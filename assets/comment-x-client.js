@@ -347,66 +347,63 @@ function toggleMenu() {
 function insertContent() { // Runs once at the beginning
   !gfwStlyesInserted && insertStyles()
   gfwPanelVisible = true;
-  menuRoot.innerHTML = menuTemplate()
-  gfwMenuButton = document.querySelector('button#gfw-menu');
-
-  function setMenuListeners() {
-    gfwMenuButton.addEventListener('click', toggleMenu)
-    gfwMenuButton.addEventListener('keydown', function (evt) {
-      if (evt.keyCode === 40) {
-        toggleMenu()
-      }
-    })
-
-    // Claim article authorship
-    let btnClaimArticle = document.querySelector('#btn-claim-article')
-    let state = getState()
-    let loadingString = 'Claiming article authorship';
-    if (state.authorshipClaimed) {
-      btnClaimArticle.innerText = 'Enable comment highlighting'
-      loadingString = 'Enabling comment highlighting'
-    }
-    btnClaimArticle.addEventListener('click', function () {
-      toggleMenu()
-
-      postMessage({
-        contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
-      })
-      showLoadingAnimation(loadingString)
-      const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
-        clearAllPolls()
-        const uid = data[0][sessionUUID]
-
-
-
-        let newContents = {
-          para: `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${uid}%0D%0APlease add my ID to Wagtail!">Generate email to submit claim</a><br/>
-          <a href="{{pageRootUrl}}${window.location.pathname}?caid=${uid}">Test only: simulate confirmed claim.</a>
-          `,
-          hidden: false,
-          buttons: [closeButton]
-        }
-        const currentState = updateGfwState({
-          coralUserId: uid,
-          authorshipClaimed: true
-        })
-
-        initHighlightForAuthor(currentState)
-
-        transitionWidget(newContents)
-      }, function (error) {
-        handleLookupError(`There has been an error retrieving your CoralID. Please refresh the page and try again, making sure you are not logged in as a Coral editor, moderator or admin.`, error)
-      }), 1000);
-      pollListeners.push(pollCheckInterval)
-    })
-  }
-  setMenuListeners()
-
-
-
+  showCogMenu()
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers(currentContents)
 }
+
+function showCogMenu() {
+  menuRoot.innerHTML = menuTemplate()
+  gfwMenuButton = document.querySelector('button#gfw-menu');
+
+
+  gfwMenuButton.addEventListener('click', toggleMenu)
+  gfwMenuButton.addEventListener('keydown', function (evt) {
+    if (evt.keyCode === 40) {
+      toggleMenu()
+    }
+  })
+
+  // Claim article authorship
+  let btnClaimArticle = document.querySelector('#btn-claim-article')
+  let state = getState()
+  let loadingString = 'Claiming article authorship';
+  if (state.authorshipClaimed) {
+    btnClaimArticle.innerText = 'Enable comment highlighting'
+    loadingString = 'Enabling comment highlighting'
+  }
+  btnClaimArticle.addEventListener('click', () => handleAuthorshipClaim(loadingString))
+}
+
+function hideCogMenu() {
+  menuRoot.innerHTML = ''
+}
+
+
+function handleAuthorshipClaim(loadingString) {
+  toggleMenu(); // Hide the button
+  postMessage({
+    contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
+  })
+  showLoadingAnimation(loadingString);
+  const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
+
+    clearAllPolls()
+    const uid = data[0][sessionUUID] // pluck their coralId
+    const currentState = updateGfwState({
+      coralUserId: uid,
+      authorshipClaimed: true
+    })
+
+    let nextContents = initHighlightForAuthor(currentState);
+    transitionWidget(nextContents);
+
+  }, function (error) {
+    handleLookupError(`There has been an error retrieving your CoralID. Please refresh the page and try again, making sure you are not logged in as a Coral editor, moderator or admin.`, error)
+  }), 1000);
+  pollListeners.push(pollCheckInterval)
+}
+
 
 function transitionWidget(someContents) {
   let clonedContents = Object.assign({}, currentContents);
@@ -459,8 +456,8 @@ function updateGfwState(updates) {
 
 function gfwGotSignedInUser(state) {
   let currentState = updateGfwState(state)
-  currentContents = startingContents
-  initHighlightForAuthor(currentState)
+  let nextContents = initHighlightForAuthor(currentState);
+  currentContents = !nextContents ? startingContents : nextContents;
   insertContent();
 }
 
@@ -475,6 +472,7 @@ function gfwGotSignedOutUser() {
     contents: { "event_name": "CANCEL_HIGHLIGHT_COMMENTS" }
   })
   closeWidget()
+  hideCogMenu()
 }
 
 function checkForLoggedInUser() {
@@ -490,24 +488,39 @@ function checkForLoggedInUser() {
 }
 
 
-function initHighlightForAuthor(currentState, cb) {
+function initHighlightForAuthor(currentState) {
 
-  if (authorCommentId) {
-    if (currentState.coralUserId) {
-      if (currentState.coralUserId === authorCommentId) {
-        coralReadyActions.push(function () {
-          let message = {
-            contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
-          }
-          postMessage(message)
-        })
-        handleCoralReady()
-        if (cb) {
-          cb()
-        }
+  let customMessage;
+
+  if (authorCommentId && currentState.coralUserId && authorCommentId === currentState.coralUserId) {
+    // they are the author
+    customMessage = 'Your Coral account has been verified as the author of this article. You can now use the highlight comment buttons in the comment thread to pick a highlighted comment';
+    coralReadyActions.push(function () {
+      let message = {
+        contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
       }
-    }
+      postMessage(message)
+    })
+    handleCoralReady()
+  } else if (authorCommentId && currentState.coralUserId && authorCommentId !== currentState.coralUserId) {
+    customMessage = 'We have verified another account as the author of this article. Please check and try again.'
+  } else if (!authorCommentId && currentState.coralUserId) {
+    customMessage = `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${currentState.coralUserId}%0D%0APlease add my ID to Wagtail!">Generate email to submit claim</a><br/>
+      <a href="{{pageRootUrl}}${window.location.pathname}?caid=${currentState.coralUserId}">Test only: simulate confirmed claim.</a>
+      `
+  } else if (currentState.coralUserId === null) {
+    customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
+  } else {
+    return false
   }
+
+  return newContents = {
+    para: customMessage,
+    hidden: false,
+    buttons: [closeButton]
+  }
+
+
 
 }
 
@@ -586,7 +599,6 @@ async function getHighlightedComment() {
             highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
           }
         }
-
       }
     }
     catch (error) {
@@ -684,23 +696,16 @@ async function startRevShare() {
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
-
   }
-
-
-
 }
+
 window.addEventListener('load', () => {
   getHighlightedComment()
   checkForLoggedInUser()
   if (document.monetization) { // only run if user has a paying wallet
     startRevShare()
   }
-
 })
-
-
-
 
 function showLoadingAnimation(customMessage, cb) {
   let loading = document.querySelector('#loading')
@@ -734,10 +739,6 @@ function showLoadingAnimation(customMessage, cb) {
   }
   window.addEventListener("message", listenForResponse);
 }
-
-
-
-
 
 window.addEventListener("message", (event) => {
   if (event.origin !== "{{coralRootUrl}}")
