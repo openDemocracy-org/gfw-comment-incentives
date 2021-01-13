@@ -1,5 +1,6 @@
 const AllowedServerEvents = ['AUTHOR_CANDIDATE', 'NEW_WALLET', 'HIGHLIGHT_COMMENT']
-const AllowedDomEvents = ['INIT_HIGHLIGHT_COMMENTS', 'PING']
+const AllowedDomEvents = ['INIT_HIGHLIGHT_COMMENTS', 'CANCEL_HIGHLIGHT_COMMENTS', 'PING']
+let highlightIntervals = [];
 
 let coralRecentlyLoaded = true;
 setTimeout(function () {
@@ -30,9 +31,15 @@ window.addEventListener("message", (event) => {
     if (AllowedServerEvents.includes(eventName)) {
       let comment = event.data.contents
       submitComment(comment)
+      return;
     }
-    if (AllowedDomEvents.includes(eventName)) {
+    if (AllowedDomEvents.includes(eventName) && eventName === 'INIT_HIGHLIGHT_COMMENTS') {
       addHighlightEvents(event)
+      return;
+    }
+
+    if (AllowedDomEvents.includes(eventName) && eventName === 'CANCEL_HIGHLIGHT_COMMENTS') {
+      removeHighlightEvents()
     }
   }
 
@@ -49,15 +56,27 @@ function submitComment(comment) {
   }, 10)
 }
 
+function removeHighlightEvents() {
+  clearIntervals()
+  let gfwButtons = document.querySelectorAll('.gfw-button')
+  setTimeout(() => gfwButtons.forEach(button => button.remove()), 200);
+}
+
+function clearIntervals() {
+  highlightIntervals.map(interval => clearInterval(interval))
+  highlightIntervals = []
+}
+
 function addHighlightEvents(triggeringEvent) {
 
-
-  setInterval(function () {
+  console.log('adding highlight events')
+  const highlightInterval = setInterval(function () {
     let commentItems = document.querySelectorAll('.coral-comment')
     commentItems.forEach((comment) => {
       let gotButton = comment.getAttribute('gotButton')
       if (!gotButton) {
         let buttonElement = document.createElement('button')
+        buttonElement.classList.add('gfw-button')
         buttonElement.innerHTML = 'Highlight comment'
         comment.insertAdjacentElement("afterend", buttonElement)
         buttonElement.addEventListener('click', function () {
@@ -83,4 +102,5 @@ function addHighlightEvents(triggeringEvent) {
 
     })
   }, 1000)
+  highlightIntervals.push(highlightInterval)
 } 

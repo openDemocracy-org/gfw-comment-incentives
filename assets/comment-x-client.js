@@ -5,10 +5,22 @@ let gfwPanelVisible = false;
 let gfwStlyesInserted = false;
 let menuRoot = document.getElementById('gfw-menu-container')
 let contentRoot = document.getElementById('gfw-widget'); // DOM node to hold widget
-let wallet, pollCheckInterval;
+
+// What mode are we in?
+
+// Check for approved author
+let authorCommentMeta = document.querySelector('[name="author_comment_id"]');
+let authorCommentId = false;
+if (authorCommentMeta) {
+  authorCommentId = authorCommentMeta.getAttribute('content') != 'None' ? authorCommentMeta.getAttribute('content') : false;
+}
+
+let gotMonetizationTag = document.querySelector('meta[name=monetization]')
+let wallet;
 let gfwMenuButton;
 const body = document.querySelector('body')
 const coralReadyActions = []
+let pollListeners = []
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -17,7 +29,7 @@ function uuidv4() {
   });
 }
 
-const sessionUUID = uuidv4()
+let sessionUUID = uuidv4()
 const slug = getSlugFromUrl(window.location.pathname)
 
 // Styles for page injection
@@ -93,18 +105,15 @@ const styles = () => {
     #gfw-menu-contents {
       width: 100%;
     }
-    #loading[hidden=hidden] {
-      display: none;
-    }
     #coral_thread_container {
       position: relative;
       min-height: 723px;
     }
     #loading {
       position: absolute;
-      width: 100%;
+      width: 102%;
       height: 3000px;
-      left: 0;
+      left: -1%;
       top: 0;
       right: 0;
       background: white;
@@ -147,7 +156,6 @@ const resetButton = {
     updateGfwState({
       userType: undefined
     })
-    pollCheckInterval && clearInterval(pollCheckInterval)
     transitionWidget(startingContents)
   }
 }
@@ -166,28 +174,38 @@ function closeWidget() {
   currentContents = startingContents
 }
 
-let startingContents = {
+let startingMonetizationContents = {
   para: `If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author. To setup your wallet, please follow the <a href=''>instructions here</a>. Please enter your wallet address below:<br/>
-<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><br/>   
+
+<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span><br/>   
 `,
+  hidden: false,
   buttons: [],
   events: function () {
     let input = document.querySelector('input[name=wallet]')
     let walletSubmitForm = document.querySelector('form#wallet')
+    let walletNotice = document.querySelector('.gfw-notice')
+    let walletInput = document.querySelector('input[name=wallet]')
+    walletInput && walletInput.addEventListener('keydown', function (evt) {
+      walletNotice.innerHTML = ''
+    })
     walletSubmitForm && walletSubmitForm.addEventListener('submit', function (evt) {
       evt.preventDefault()
       wallet = input.value
       if (wallet === '') {
+        walletNotice.innerHTML = 'Please enter a wallet'
         return
       }
 
       if (wallet[0] != '$') {
+        walletNotice.innerHTML = 'Please ensure your wallet is in the correct format'
         return
       } else {
         wallet = wallet.slice(1)
         if (wallet.length === 27) { // Uphold wallet length
           wallet = wallet.split('.').join('-')
         } else {
+          walletNotice.innerHTML = 'Please ensure you enter the correct number of characters'
           return
         }
       }
@@ -196,35 +214,50 @@ let startingContents = {
         wallet
       }
 
-      pollCheckInterval = setInterval(() => pollForSavedContent('/data/all-wallets.json', walletLookup, 'objEq', () => {
+      const pollCheckInterval = setInterval(() => pollForSavedContent('/data/all-wallets.json', walletLookup, 'objEq', () => {
         transitionWidget(commenterFlowHandleWalletSuccess);
-      }, handleLookupError), 1000);
+        clearAllPolls()
+      }, function (error) {
+        handleLookupError("We can't find your wallet on the server. Please make sure you are logged in as a normal user i.e. not a Coral moderator, editor, or admin and try again.", error)
+      }), 1000);
+      pollListeners.push(pollCheckInterval)
       commenterFlowSubmitWallet()
 
     })
   }
 }
 
-
-let currentContents = startingContents; // Global content state
-
-const handleLookupError = () => {
-  alert('Lookup failed') // TODO
+let startingStandardContents = {
+  para: '',
+  hidden: true,
+  buttons: [],
+  events: null
 }
+
+let startingContents = gotMonetizationTag ? startingMonetizationContents : startingStandardContents;
+let currentContents = startingContents; // Global content state
 
 const commenterFlowSubmitWallet = () => {
   let newContents = {
     para: `<span class="loading">Checking for page will update shortly thereafter...</span>
       `,
+    hidden: false,
     events: null,
-    buttons: [resetButton]
+    buttons: []
   }
   let message = {
     contents: { "event_name": "NEW_WALLET", "wallet": `${wallet}`, }
   }
   postMessage(message)
   transitionWidget(newContents)
-  showLoadingAnimation()
+  showLoadingAnimation('Submitting wallet') // No callback as polling will trigger transition
+}
+
+function clearAllPolls() {
+
+  pollListeners.map(interval => clearInterval(interval))
+  pollListeners = []
+
 }
 
 async function pollForSavedContent(path, desiredData, dataFormat, success, error) {
@@ -236,7 +269,6 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
 
       if (dataFormat === 'objEq') {
         if (data[desiredData.key] === desiredData.value) {
-          clearInterval(pollCheckInterval)
           success()
         } else {
           throw new Error('no object found')
@@ -245,26 +277,34 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
       if (dataFormat === 'objKeyExist') {
         let results = data.filter(record => record[desiredData])
         if (results.length > 0) {
-          clearInterval(pollCheckInterval)
           success(results)
         } else {
-          clearInterval(pollCheckInterval)
-          error('wallet not found')
           throw new Error('no object key')
         }
       }
 
     }
   } catch (e) {
-    clearInterval(pollCheckInterval)
-    console.log(e)
+    error(e)
   }
+}
+
+const handleLookupError = (message, error) => {
+  clearAllPolls()
+  let errorContents = {
+    para: message,
+    hidden: false,
+    buttons: [closeButton]
+  }
+  transitionWidget(errorContents)
+  console.error(error)
 }
 
 const commenterFlowHandleWalletSuccess = {
   para: `We have received your wallet!<br/>
-    You can go ahead and close this window now. If an author chooses to highlight your comment, we will use the wallet you submitted to share some of the page's revenue with you. How's that?!
+    If an author chooses to highlight your comment, we will use it to share some of the page's revenue with you :)
     `,
+  hidden: false,
   events: null,
   buttons: [closeButton]
 }
@@ -281,7 +321,7 @@ const menuTemplate = () => {
 
 const template = (content) => {
   return `
-<section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary ${content.class ? content.class : ''}">
+<section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary" ${content.hidden ? 'hidden="hidden"' : ''}>
     <h1 class="sidebar__heading mailing-list__sub-title">Comment Incentives</h1>
     <p class="rich-text mailing-list__text">${content.para}</p>
     ${content.buttons.map((button) => `<button class="sidebar__link" id="${button.id}">${button.label}</button>`)}
@@ -320,34 +360,50 @@ function insertContent() { // Runs once at the beginning
 
     // Claim article authorship
     let btnClaimArticle = document.querySelector('#btn-claim-article')
+    let state = getState()
+    let loadingString = 'Claiming article authorship';
+    if (state.authorshipClaimed) {
+      btnClaimArticle.innerText = 'Enable comment highlighting'
+      loadingString = 'Enabling comment highlighting'
+    }
     btnClaimArticle.addEventListener('click', function () {
       toggleMenu()
-      let message = {
-        contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
-      }
-      postMessage(message)
-      showLoadingAnimation()
-      pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
-        const uid = data[0][sessionUUID]
-        let newContents = {
-          para: `Your CoralTalk ID has been stored on the server. Please click the link to email it to Matt: <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${uid}%0D%0APlease add my ID to Wagtail!">Send CoralID to Matt @ openDemocracy</a><br/>
-          Your coral ID: ${uid}
 
+      postMessage({
+        contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
+      })
+      showLoadingAnimation(loadingString)
+      const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
+        clearAllPolls()
+        const uid = data[0][sessionUUID]
+
+
+
+        let newContents = {
+          para: `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${uid}%0D%0APlease add my ID to Wagtail!">Generate email to submit claim</a><br/>
+          <a href="{{pageRootUrl}}${window.location.pathname}?caid=${uid}">Test only: simulate confirmed claim.</a>
           `,
+          hidden: false,
           buttons: [closeButton]
         }
-        updateGfwState({
-          coralUserId: uid
+        const currentState = updateGfwState({
+          coralUserId: uid,
+          authorshipClaimed: true
         })
+
+        initHighlightForAuthor(currentState)
+
         transitionWidget(newContents)
-      }, handleLookupError), 1000);
+      }, function (error) {
+        handleLookupError(`There has been an error retrieving your CoralID. Please refresh the page and try again, making sure you are not logged in as a Coral editor, moderator or admin.`, error)
+      }), 1000);
+      pollListeners.push(pollCheckInterval)
     })
   }
-
-
-
-
   setMenuListeners()
+
+
+
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers(currentContents)
 }
@@ -376,6 +432,17 @@ function updateEventHandlers(currentContents) {
 
 // State handlers
 
+function getState() {
+  let lsState = localStorage.getItem('gfwState');
+  let state;
+  if (lsState) {
+    state = JSON.parse(lsState)
+  } else {
+    state = {}
+  }
+  return state;
+}
+
 function updateGfwState(updates) {
   let gotOldState = localStorage.getItem('gfwState');
   let newState = updates;
@@ -391,38 +458,22 @@ function updateGfwState(updates) {
 }
 
 function gfwGotSignedInUser(state) {
-
   let currentState = updateGfwState(state)
   currentContents = startingContents
-
-
-  // Check for approved author
-  let meta = document.querySelector('[name="author_comment_id"]')
-  if (meta) {
-    let authorCommentId = meta.getAttribute('content')
-    if (authorCommentId) {
-      if (state.coralUserId) {
-        if (state.coralUserId === authorCommentId) {
-          coralReadyActions.push(function () {
-            let message = {
-              contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
-            }
-            postMessage(message)
-          })
-        }
-      }
-    }
-  }
-
-
+  initHighlightForAuthor(currentState)
   insertContent();
 }
 
 function gfwGotSignedOutUser() {
   const state = {
-    loggedIn: false
+    loggedIn: false,
+    coralUserId: null
   }
+  sessionUUID = uuidv4()
   updateGfwState(state)
+  postMessage({
+    contents: { "event_name": "CANCEL_HIGHLIGHT_COMMENTS" }
+  })
   closeWidget()
 }
 
@@ -439,8 +490,29 @@ function checkForLoggedInUser() {
 }
 
 
+function initHighlightForAuthor(currentState, cb) {
 
-function getCoralWindow() {
+  if (authorCommentId) {
+    if (currentState.coralUserId) {
+      if (currentState.coralUserId === authorCommentId) {
+        coralReadyActions.push(function () {
+          let message = {
+            contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
+          }
+          postMessage(message)
+        })
+        handleCoralReady()
+        if (cb) {
+          cb()
+        }
+      }
+    }
+  }
+
+}
+
+
+function getCoralWindow(comment) {
   try {
     var iframe = document.querySelector('#coral_thread_iframe');
     var coralWindow = iframe.contentWindow;
@@ -448,13 +520,18 @@ function getCoralWindow() {
   }
   catch (error) {
     console.error(error)
-    alert("Error: couldn't connect to Coral.")
+    let errorContents = {
+      para: `We have encountered an error connecting to Coral. The event that ran too soon was ${comment.contents.event_name}. Please make a note of this and report it to Matt or Ali. Thank you. You can dismiss this window and continue if Coral is appearing correctly below.`,
+      hidden: false,
+      buttons: [closeButton]
+    }
+    transitionWidget(errorContents)
     return false;
   }
 }
 
 function postMessage(comment) {
-  let coralWindow = getCoralWindow()
+  let coralWindow = getCoralWindow(comment)
   if (coralWindow) {
     coralWindow.postMessage(comment, "{{coralRootUrl}}")
   }
@@ -496,29 +573,24 @@ const highlightedCommentTemplate = (content) => {
 
 
 async function getHighlightedComment() {
-  let meta = document.querySelector('[name="author_comment_id"]')
-  if (meta) {
-    let authorCommentId = meta.getAttribute('content')
+  if (authorCommentId) {
+    try {
+      let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
 
-    if (authorCommentId) {
-      try {
-        let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
-
-        if (response.ok) {
-          let data = await response.json();
-          if (data.length > 0) {
-            data = data[0] // Got multiple comments
-            if (data.author_id === authorCommentId) {
-              let highlightedCommentBox = document.querySelector('#highlighted-comment')
-              highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
-            }
+      if (response.ok) {
+        let data = await response.json();
+        if (data.length > 0) {
+          data = data[0] // Got multiple comments
+          if (data.author_id === authorCommentId) {
+            let highlightedCommentBox = document.querySelector('#highlighted-comment')
+            highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
           }
-
         }
+
       }
-      catch (error) {
-        console.log(error)
-      }
+    }
+    catch (error) {
+      console.log(error)
     }
   }
 }
@@ -551,44 +623,47 @@ function clientHandleCoralEvent(events) {
 
 async function startRevShare() {
   let monetizationTag = document.querySelector('meta[name=monetization]')
-  let odWalletAddress = monetizationTag.getAttribute('content')
-  let authorId = document.querySelector('meta[name=author_comment_id]').getAttribute('content')
-  try {
-    let response = await fetch(`{{externalServiceRootUrl}}/data/wallets/${slug}.json?author=${authorId}`);
-    if (response.ok) {
-      let data = await response.json();
-      if (!data.gotWallet) {
-        console.log('GFW Got no wallets, defaulting to 100% oD revenue.')
-        return
-      }
-      let pointers;
-      if (data.authorWallet && data.commenterWallet) {
-        pointers = {
-          [`${odWalletAddress}`]: 45,
-          [`${data.authorWallet}`]: 45,
-          [`${data.commenterWallet}`]: 10
+  if (monetizationTag) {
+    let odWalletAddress = monetizationTag.getAttribute('content')
+    let authorId = document.querySelector('meta[name=author_comment_id]').getAttribute('content')
+    try {
+      let response = await fetch(`{{externalServiceRootUrl}}/data/wallets/${slug}.json?author=${authorId}`);
+      if (response.ok) {
+        let data = await response.json();
+        if (!data.gotWallet) {
+          console.log('GFW Got no wallets, defaulting to 100% oD revenue.')
+          return
         }
-        console.log('GFW Got wallets for author and commenter, 45 45 10.')
+        let pointers;
+        if (data.authorWallet && data.commenterWallet) {
+          pointers = {
+            [`${odWalletAddress}`]: 45,
+            [`${data.authorWallet}`]: 45,
+            [`${data.commenterWallet}`]: 10
+          }
+          console.log('GFW Got wallets for author and commenter, 45 45 10.')
 
-      } else if (data.authorWallet) {
-        pointers = {
-          [`${odWalletAddress}`]: 50,
-          [`${data.authorWallet}`]: 50
+        } else if (data.authorWallet) {
+          pointers = {
+            [`${odWalletAddress}`]: 50,
+            [`${data.authorWallet}`]: 50
+          }
+          console.log('GFW Got wallet for author, 50 50.')
+        } else if (data.commenterWallet) {
+          pointers = {
+            [`${odWalletAddress}`]: 90,
+            [`${data.commenterWallet}`]: 10
+          }
+          console.log('GFW Got wallet for commenter, 90 10.')
         }
-        console.log('GFW Got wallet for author, 50 50.')
-      } else if (data.commenterWallet) {
-        pointers = {
-          [`${odWalletAddress}`]: 90,
-          [`${data.commenterWallet}`]: 10
-        }
-        console.log('GFW Got wallet for commenter, 90 10.')
+        console.log(pointers)
+        performCalculations(pointers)
       }
-      console.log(pointers)
-      performCalculations(pointers)
+    } catch (e) {
+      console.log(e)
     }
-  } catch (e) {
-    console.log(e)
   }
+
 
   function performCalculations(pointers) {
 
@@ -627,9 +702,12 @@ window.addEventListener('load', () => {
 
 
 
-function showLoadingAnimation(cb) {
+function showLoadingAnimation(customMessage, cb) {
   let loading = document.querySelector('#loading')
   loading.removeAttribute('hidden')
+  if (customMessage) {
+    loading.innerHTML = customMessage
+  }
   let ping = setInterval(() => {
     let message = {
       contents: { "event_name": "PING", }
@@ -665,7 +743,7 @@ window.addEventListener("message", (event) => {
   if (event.origin !== "{{coralRootUrl}}")
     return;
   if (event.data === "START_HIGHLIGHT_COMMENT") {
-    showLoadingAnimation(function () {
+    showLoadingAnimation('Highlighting comment', function () {
       document.getElementById('highlighted-comment').scrollIntoView({
         behavior: 'smooth'
       });

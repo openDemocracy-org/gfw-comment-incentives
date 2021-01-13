@@ -35,6 +35,7 @@ mongoClient.connect(function (err) {
 
 app.get('/assets/client.js', function (req, res) {
     res.render('comment-x-client.js', {
+        pageRootUrl: process.env.PAGE_ROOT_URL,
         coralRootUrl: process.env.CORAL_ROOT_URL,
         externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
     });
