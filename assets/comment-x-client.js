@@ -40,13 +40,27 @@ const styles = () => {
       clear: both;
     }
     #gfw-comments {
-        overflow-x: hidden;
-        overflow-y: auto; 
-        margin-bottom: 2rem;
+      overflow-x: hidden;
+      overflow-y: auto; 
+      margin-bottom: 2rem;
+  }
+    @media (min-width: 600px) {
+      #gfw-widget {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        width: 300px;
+        z-index: 2;
+      }
+      #gfw-comments { 
+        margin-bottom: 0rem;
     }
+    }
+
     #gfw-comments h1 {
         font-size: 1.4rem;
         margin-bottom: 0;
+        line-height: 1rem;
     }
     #gfw-comments h2 {
         font-size: 1.2rem;
@@ -100,7 +114,7 @@ const styles = () => {
       float: right;
       width: 50%;
       text-align: right;
-      z-index:10;
+      z-index:1;
     }
     #gfw-menu-contents {
       width: 100%;
@@ -119,13 +133,17 @@ const styles = () => {
       background: white;
       text-align: center;
       padding-top: 10rem;
-      z-index: 99999;
+      z-index: 1;
     }
     #loading {
       color: inherit;
       background: linear-gradient(100deg, #eceff1 30%, #f6f7f8 50%, #eceff1 70%);
       background-size: 400%;
       animation: loading 1.2s ease-in-out infinite;
+    }
+
+    input[name=wallet] {
+      width: inherit;
     }
     
     @keyframes loading {
@@ -176,11 +194,10 @@ function closeWidget() {
 
 let startingMonetizationContents = {
   para: `If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author. To setup your wallet, please follow the <a href=''>instructions here</a>. Please enter your wallet address below:<br/>
-
-<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span><br/>   
+<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
-  buttons: [],
+  buttons: [closeButton],
   events: function () {
     let input = document.querySelector('input[name=wallet]')
     let walletSubmitForm = document.querySelector('form#wallet')
