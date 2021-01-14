@@ -752,7 +752,20 @@ function showLoadingAnimation(customMessage, cb) {
 
 function checkHighlightedComment(commentResponse, commentFromIframe) {
 
+
+  const scrollButton = {
+    label: "View highlighted comment",
+    id: "scroll-button",
+    events: null,
+    go: function () {
+      document.getElementById('highlighted-comment').scrollIntoView({
+        behavior: 'smooth'
+      });
+    }
+  }
+
   let customMessage;
+  let gotScrollButton = false;
   let comment = commentResponse[0]
   if (!comment) {
     customMessage = 'No comment found, please check and try again.';
@@ -760,18 +773,20 @@ function checkHighlightedComment(commentResponse, commentFromIframe) {
     if (comment.author_id === authorCommentId && commentFromIframe.comment_id === comment.comment_id) {
       // they are the author and it's a valid comment
       customMessage = 'Successfully highlighted comment';
-      // document.getElementById('highlighted-comment').scrollIntoView({
-      //   behavior: 'smooth'
-      // });
+      gotScrollButton = true;
     } else {
       customMessage = 'Error highlighting comment :(';
     }
   }
-  return newContents = {
+  let newContents = {
     para: customMessage,
     hidden: false,
     buttons: [closeButton]
   }
+
+  gotScrollButton && newContents.buttons.push(scrollButton)
+
+  return newContents;
 }
 
 window.addEventListener("message", (event) => {
