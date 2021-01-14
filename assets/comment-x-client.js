@@ -811,9 +811,8 @@ window.addEventListener("message", (event) => {
     showLoadingAnimation('Highlighting comment', function () {
 
       let commentFromIframe = event.data.comment
-      let state = getState()
       let validComment = {
-        author_id: state.coralUserId
+        comment_id: commentFromIframe.comment_id
       }
 
       // Poll for highlighted comment
