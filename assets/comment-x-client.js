@@ -563,7 +563,7 @@ const highlightedCommentTemplate = (content) => {
               </a></div>
           <div class="related-story-meta">
               <p>
-                  This comment has been highlighted by article author ${content.author_name} and the
+                  This comment has been highlighted by the article's author and the
                   commenter is enjoying a small percentage of this page's revenue. <a
                       style="font-size: inherit; color: inherit; display: inherit;"
                       class="article-list__title" href="#gfw-menu-container">Find out more</a></p>
