@@ -227,9 +227,10 @@ let startingMonetizationContents = {
         }
       }
 
-      let walletLookup = {
-        wallet
-      }
+      let walletLookup = [{
+        key: 'wallet',
+        value: wallet
+      }]
 
       const pollCheckInterval = setInterval(() => pollForSavedContent('/data/all-wallets.json', walletLookup, 'objEq', () => {
         transitionWidget(commenterFlowHandleWalletSuccess);
@@ -278,19 +279,31 @@ function clearAllPolls() {
 }
 
 async function pollForSavedContent(path, desiredData, dataFormat, success, error) {
+
   try {
     let response = await fetch(`{{externalServiceRootUrl}}${path}`);
     if (response.ok) { // if HTTP-status is 200-299
       // get the response body (the method explained below)
       let data = await response.json();
-
-      if (dataFormat === 'objEq') {
-        if (data[desiredData.key] === desiredData.value) {
-          success(data)
-        } else {
-          throw new Error('no object found')
+      const foundItem = data.map(comment => {
+        if (dataFormat === 'objEq') {
+          if (comment[desiredData[0].key] === desiredData[0].value) {
+            if (desiredData.length > 1) {
+              if (comment[desiredData[1].key] === desiredData[1].value) {
+                success(comment)
+                return true;
+              }  else {
+                return false
+              }
+            } else {
+              success(comment)
+              return true
+            }
+          } 
         }
-      }
+      })
+      //console.log(foundItem) TODO: check if map returns anything and return error if not
+
       if (dataFormat === 'objKeyExist') {
         let results = data.filter(record => record[desiredData])
         if (results.length > 0) {
@@ -308,6 +321,7 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
 
 const handleLookupError = (message, error) => {
   clearAllPolls()
+  setTimeout(clearAllPolls, 500) // Just in case!
   let errorContents = {
     para: message,
     hidden: false,
@@ -756,7 +770,7 @@ function showLoadingAnimation(customMessage, cb) {
 }
 
 
-function checkHighlightedComment(commentResponse, commentFromIframe) {
+function checkHighlightedComment(comment, commentFromIframe) {
 
 
   const scrollButton = {
@@ -772,7 +786,6 @@ function checkHighlightedComment(commentResponse, commentFromIframe) {
 
   let customMessage;
   let gotScrollButton = false;
-  let comment = commentResponse[0]
   if (!comment) {
     customMessage = 'No comment found, please check and try again.';
   } else {
@@ -811,9 +824,13 @@ window.addEventListener("message", (event) => {
     showLoadingAnimation('Highlighting comment', function () {
 
       let commentFromIframe = event.data.comment
-      let validComment = {
-        comment_id: commentFromIframe.comment_id
-      }
+      let validComment = [{
+        key: 'comment_id',
+        value: commentFromIframe.comment_id
+      }, {
+        key: 'author_id',
+        value: authorCommentId
+      }]
 
       // Poll for highlighted comment
       const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/chosen/${slug}.json`, validComment, 'objEq', (commentFromServer) => {
