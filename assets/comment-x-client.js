@@ -193,7 +193,7 @@ function closeWidget() {
 }
 
 let startingMonetizationContents = {
-  para: `If you setup a wallet, we can pay you whenever one of your comments is highlighted by an article author. To setup your wallet, please follow the <a href=''>instructions here</a>. Please enter your wallet address below:<br/>
+  para: `Set up a digital wallet so we can share micropayments whenever one of your comments is highlighted by an article author. <a href='/rewardcomments'>Set up your wallet and learn more here</a>.<br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
