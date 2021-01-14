@@ -78,6 +78,9 @@ function addHighlightEvents(triggeringEvent) {
         buttonElement.innerHTML = 'Highlight comment'
         comment.insertAdjacentElement("afterend", buttonElement)
         buttonElement.addEventListener('click', function () {
+          triggeringEvent.source.postMessage({
+            "event_name": "START_LOADING"
+          }, triggeringEvent.origin);
           setTimeout(function () { // wait for the loading animation to kick in
             let commenter_name = comment.querySelector('.coral-comment-username span').innerHTML;
             let timestamp = comment.querySelector('.coral-comment-timestamp').getAttribute('datetime');

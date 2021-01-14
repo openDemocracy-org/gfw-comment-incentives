@@ -717,6 +717,12 @@ window.addEventListener('load', () => {
 })
 
 function showLoadingAnimation(customMessage, cb) {
+  let contents = {
+    para: customMessage,
+    hidden: false,
+    buttons: [closeButton]
+  }
+  transitionWidget(contents)
   let loading = document.querySelector('#loading')
   loading.removeAttribute('hidden')
   if (customMessage) {
@@ -792,6 +798,11 @@ function checkHighlightedComment(commentResponse, commentFromIframe) {
 window.addEventListener("message", (event) => {
   if (event.origin !== "{{coralRootUrl}}")
     return;
+
+  if (event.data.event_name === 'START_LOADING') {
+    showLoadingAnimation('Loading')
+  }
+
   if (event.data.event_name === "START_HIGHLIGHT_COMMENT") {
     showLoadingAnimation('Highlighting comment', function () {
 
