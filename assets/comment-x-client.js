@@ -269,7 +269,7 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
 
       if (dataFormat === 'objEq') {
         if (data[desiredData.key] === desiredData.value) {
-          success()
+          success(data)
         } else {
           throw new Error('no object found')
         }
@@ -504,7 +504,7 @@ function initHighlightForAuthor(currentState) {
     customMessage = `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${currentState.coralUserId}%0D%0APlease add my ID to Wagtail!">Generate email to submit claim</a><br/>
       <a href="{{pageRootUrl}}${window.location.pathname}?caid=${currentState.coralUserId}">Test only: simulate confirmed claim.</a>
       `
-  } else if (currentState.coralUserId === null) {
+  } else if (currentState.coralUserId === null && currentState.authorshipClaimed) {
     customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
   } else {
     return false
@@ -577,19 +577,15 @@ const highlightedCommentTemplate = (content) => {
 
 
 async function getHighlightedComment() {
-  console.log(`Author comment ID: ${authorCommentId}`)
   if (authorCommentId) {
     try {
       let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
 
       if (response.ok) {
         let data = await response.json();
-        console.log(data)
         if (data.length > 0) {
           let chosenComment = data.filter(comment => comment.author_id === authorCommentId)
-          console.log(chosenComment)
           data = chosenComment[0]
-          console.log(data)
           if (data.author_id === authorCommentId) {
             let highlightedCommentBox = document.querySelector('#highlighted-comment')
             highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
@@ -736,17 +732,55 @@ function showLoadingAnimation(customMessage, cb) {
   window.addEventListener("message", listenForResponse);
 }
 
+
+function checkHighlightedComment(commentResponse, commentFromIframe) {
+
+  let customMessage;
+  let comment = commentResponse[0]
+  if (!comment) {
+    customMessage = 'No comment found, please check and try again.';
+  } else {
+    if (comment.author_id === authorCommentId && commentFromIframe.comment_id === comment.comment_id) {
+      // they are the author and it's a valid comment
+      customMessage = 'Successfully highlighted comment';
+      // document.getElementById('highlighted-comment').scrollIntoView({
+      //   behavior: 'smooth'
+      // });
+    } else {
+      customMessage = 'Error highlighting comment :(';
+    }
+  }
+  return newContents = {
+    para: customMessage,
+    hidden: false,
+    buttons: [closeButton]
+  }
+}
+
 window.addEventListener("message", (event) => {
   if (event.origin !== "{{coralRootUrl}}")
     return;
-  if (event.data === "START_HIGHLIGHT_COMMENT") {
-    console.log('GOT HIGHLIGHTED COMMENT ATTEMPT')
+  if (event.data.event_name === "START_HIGHLIGHT_COMMENT") {
     showLoadingAnimation('Highlighting comment', function () {
-      document.getElementById('highlighted-comment').scrollIntoView({
-        behavior: 'smooth'
-      });
-      console.log('scrolled, showing')
-      getHighlightedComment();
+
+      let commentFromIframe = event.data.comment
+      let state = getState()
+      let validComment = {
+        author_id: state.coralUserId
+      }
+
+      // Poll for highlighted comment
+      const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/chosen/${slug}.json`, validComment, 'objEq', (commentFromServer) => {
+        clearAllPolls()
+        let nextContents = checkHighlightedComment(commentFromServer, commentFromIframe);
+        transitionWidget(nextContents);
+        getHighlightedComment();
+
+      }, function (error) {
+        handleLookupError(`There has been an error highlighting the comment. Please refresh the page and try again, making sure you logged in as the article author.`, error)
+      }), 1000);
+      pollListeners.push(pollCheckInterval)
+
     })
   }
 
