@@ -776,6 +776,10 @@ function checkHighlightedComment(commentResponse, commentFromIframe) {
   if (!comment) {
     customMessage = 'No comment found, please check and try again.';
   } else {
+    console.log('comment from server:')
+    console.log(comment)
+    console.log('comment from iframe:')
+    console.log(commentFromIframe)
     if (comment.author_id === authorCommentId && commentFromIframe.comment_id === comment.comment_id) {
       // they are the author and it's a valid comment
       customMessage = 'Successfully highlighted comment';
