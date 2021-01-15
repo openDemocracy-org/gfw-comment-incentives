@@ -47,13 +47,16 @@ window.addEventListener("message", (event) => {
 
 function submitComment(comment) {
   let commentWindow = document.querySelector('#comments-postCommentForm-field')
-  commentWindow.innerHTML = `<div>${JSON.stringify(comment)}<br></div>`
-  let form = document.querySelector('#comments-postCommentForm-form')
-  setTimeout(function () {
-    eventFire(form, 'submit')
-    commentWindow.innerHTML = ''
-    window.location.reload()
-  }, 10)
+  if (commentWindow) {
+    commentWindow.innerHTML = `<div>${JSON.stringify(comment)}<br></div>`
+    let form = document.querySelector('#comments-postCommentForm-form')
+    setTimeout(function () {
+      eventFire(form, 'submit')
+      commentWindow.innerHTML = ''
+      window.location.reload()
+    }, 10)
+  }
+
 }
 
 function removeHighlightEvents() {
