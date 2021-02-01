@@ -33,6 +33,35 @@ function createHash(str) {
     return hash;
 }
 
+app.get('/*', slashes(), function (req, res) {
+
+    let protocol = process.env.PROTOCOL || 'https://'
+    let pageSlug = req.originalUrl
+    let coralAuthorId = req.query.caid
+    if (coralAuthorId) {
+        // remove query params
+        pageSlug = req.originalUrl.split('?')[0]
+    }
+    let pageSlugHash = createHash(pageSlug);
+
+    const pageFullUrl = protocol + req.get('host') + pageSlug;
+
+    pageSlugHash = pageSlugHash < 0 ? pageSlugHash * -1 : pageSlugHash;
+
+    let opts = {
+        tabTitle: `${pageSlug} - od`,
+        pageSlugHash: pageSlugHash,
+        pageTitle: `An oD article with page slug ${pageSlug}`,
+        pageFullUrl: pageFullUrl.includes('https://localhost') ? process.env.PAGE_ROOT_URL + pageSlug : pageFullUrl,
+        serviceRootUrl: process.env.SERVICE_ROOT_URL,
+        coralRootUrl: process.env.CORAL_ROOT_URL,
+        coralAuthorId: coralAuthorId ? coralAuthorId : ''
+    }
+
+
+    res.render('coral-test.html', opts);
+});
+
 
 app.get('/articles/*', slashes(), function (req, res) {
 
