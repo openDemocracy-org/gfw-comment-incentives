@@ -16,8 +16,4 @@ RUN npm install
 COPY . .
 
 EXPOSE 8080
-<<<<<<< HEAD
 CMD [ "node", "server-service.js" ]
-=======
-CMD [ "node", "server-fake-site.js" ]
->>>>>>> fake-site
