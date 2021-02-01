@@ -3,6 +3,8 @@ require('dotenv').config()
 const cors = require('cors')
 const express = require('express');
 const bodyParser = require('body-parser');
+const helmet = require('helmet')
+
 const MongoClient = require('mongodb').MongoClient;
 
 // Constants
@@ -18,7 +20,7 @@ nunjucks.configure('assets', {
     autoescape: false,
     express: app
 });
-
+app.use(helmet())
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.raw({ type: "application/json" }))
