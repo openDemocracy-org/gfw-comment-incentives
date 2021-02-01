@@ -36,6 +36,7 @@ mongoClient.connect(function (err) {
 });
 
 app.get('/assets/client.js', function (req, res) {
+    res.set('content-type', 'text/javascript')
     res.render('comment-x-client.js', {
         pageRootUrl: process.env.PAGE_ROOT_URL,
         coralRootUrl: process.env.CORAL_ROOT_URL,
@@ -48,6 +49,7 @@ function getSlugFromUrl(req, path) {
 }
 
 app.get('/assets/iframe.js', function (req, res) {
+    res.set('content-type', 'text/javascript')
     res.render('comment-x-iframe.js', {
         externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
     });
