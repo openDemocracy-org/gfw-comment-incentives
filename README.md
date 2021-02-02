@@ -69,7 +69,7 @@ Clone this project and `npm install`. Copy `.env.default` to `.env`.
 
 Run `npm run watch:fake-site` to start the fake site.
 
-You should now be able to access the development oD website at [http://localhost:8080/articles/hello-world](http://localhost:2000/articles/hello-world]).
+You should now be able to access the development oD website at [http://localhost:2000/articles/hello-world](http://localhost:2000/articles/hello-world]).
 
 In a new terminal window, run `npm run watch:service`
 
