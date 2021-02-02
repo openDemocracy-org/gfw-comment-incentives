@@ -5,6 +5,7 @@ let gfwPanelVisible = false;
 let gfwStlyesInserted = false;
 let menuRoot = document.getElementById('gfw-menu-container')
 let contentRoot = document.getElementById('gfw-widget'); // DOM node to hold widget
+const widgetTitle = 'Better comments online'
 
 // What mode are we in?
 
@@ -38,7 +39,26 @@ const styles = () => {
   return `
     #gfw-widget {
       clear: both;
+      background: #0162B7;
+      min-height: 1rem;
     }
+
+    #gfw-widget.minimized #gfw-comments {
+      display: none
+    }
+
+    .minimized-contents {
+      display: none;
+    }
+
+    .minimized-contents button {
+      cursor: pointer;
+    }
+
+    #gfw-widget.minimized .minimized-contents {
+      display: block;
+    }
+
     #gfw-comments {
       overflow-x: hidden;
       overflow-y: auto; 
@@ -106,6 +126,12 @@ const styles = () => {
     }
 
     #btn-claim-article { 
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 0.2rem;
+      right: 0;
     }
 
     #gfw-menu-container {      
@@ -187,17 +213,54 @@ const closeButton = {
   }
 }
 
+const minimizeButton = {
+  label: "Minimize",
+  id: "minimize-button",
+  events: null,
+  go: function () {
+    minimizeWidget()
+  }
+}
+
+function minimizeWidget() {
+  contentRoot.classList.add('minimized');
+  document.querySelector('.minimized-contents').setAttribute('aria-hidden', 'false');
+  document.querySelector('#maximize-widget').addEventListener('click', maximizeWidget)
+}
+
+function maximizeWidget() {
+  contentRoot.classList.remove('minimized')
+  document.querySelector('.minimized-contents').setAttribute('aria-hidden', 'true')
+  document.querySelector('#maximize-widget').removeEventListener('click', maximizeWidget)
+}
+
 function closeWidget() {
   contentRoot.innerHTML = ''
   currentContents = startingContents
 }
 
 let startingMonetizationContents = {
-  para: `Set up a digital wallet so we can share micropayments whenever one of your comments is highlighted by an article author. <a href="/rewardcomments" target="_blank">Set up your wallet and learn more here</a>.<br/><br/> Please enter your wallet address below:<br/>
+  title: `Better comments online?`,
+  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href="/rewardcomments" target="_blank">Learn more here.</a>`,
+  topButtons: [minimizeButton],
+  buttons: [{
+    label: "Click here if you are ready to support",
+    id: "proceed-button",
+    events: null,
+    go: function () {
+      transitionWidget(secondMonetizationContents)
+    }
+  }]
+}
+
+let secondMonetizationContents = {
+  title: widgetTitle,
+  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author. <a href="/rewardcomments" target="_blank">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
-  buttons: [closeButton],
+  buttons: [],
+  topButtons: [minimizeButton],
   events: function () {
     let input = document.querySelector('input[name=wallet]')
     let walletSubmitForm = document.querySelector('form#wallet')
@@ -246,9 +309,11 @@ let startingMonetizationContents = {
 }
 
 let startingStandardContents = {
+  title: '',
   para: '',
   hidden: true,
   buttons: [],
+  topButtons: [],
   events: null
 }
 
@@ -257,11 +322,13 @@ let currentContents = startingContents; // Global content state
 
 const commenterFlowSubmitWallet = () => {
   let newContents = {
-    para: `<span class="loading">Checking for page will update shortly thereafter...</span>
+    title: widgetTitle,
+    para: `<span class="loading">Checking for page will update shortly...</span>
       `,
     hidden: false,
     events: null,
-    buttons: []
+    buttons: [],
+    topButtons: [minimizeButton]
   }
   let message = {
     contents: { "event_name": "NEW_WALLET", "wallet": `${wallet}`, }
@@ -292,14 +359,14 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
               if (comment[desiredData[1].key] === desiredData[1].value) {
                 success(comment)
                 return true;
-              }  else {
+              } else {
                 return false
               }
             } else {
               success(comment)
               return true
             }
-          } 
+          }
         }
       })
       //console.log(foundItem) TODO: check if map returns anything and return error if not
@@ -323,21 +390,25 @@ const handleLookupError = (message, error) => {
   clearAllPolls()
   setTimeout(clearAllPolls, 500) // Just in case!
   let errorContents = {
+    title: widgetTitle,
     para: message,
     hidden: false,
-    buttons: [closeButton]
+    buttons: [],
+    topButtons: [closeButton]
   }
   transitionWidget(errorContents)
   console.error(error)
 }
 
 const commenterFlowHandleWalletSuccess = {
+  title: widgetTitle,
   para: `We have received your wallet!<br/>
     If an author chooses to highlight your comment, we will use it to share some of the page's revenue with you :)
     `,
   hidden: false,
   events: null,
-  buttons: [closeButton]
+  buttons: [closeButton],
+  topButtons: [minimizeButton]
 }
 
 const menuTemplate = () => {
@@ -352,10 +423,12 @@ const menuTemplate = () => {
 
 const template = (content) => {
   return `
+<div class="minimized-contents" aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
 <section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary" ${content.hidden ? 'hidden="hidden"' : ''}>
-    <h1 class="sidebar__heading mailing-list__sub-title">Comment Incentives</h1>
+    <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
+    <h1 class="sidebar__heading mailing-list__sub-title">${content.title}</h1>
     <p class="rich-text mailing-list__text">${content.para}</p>
-    ${content.buttons.map((button) => `<button class="sidebar__link" id="${button.id}">${button.label}</button>`)}
+    ${content.buttons.map((button) => `<button class="main-button btn btn-primary" id="${button.id}">${button.label}</button>`).join('')}
     </section>
     `
 }
@@ -452,6 +525,10 @@ function updateEventHandlers(currentContents) {
     let button = document.querySelector(`#${buttonMeta.id}`)
     button.addEventListener('click', buttonMeta.go)
   })
+  currentContents.topButtons.forEach(buttonMeta => {
+    let button = document.querySelector(`#${buttonMeta.id}`)
+    button.addEventListener('click', buttonMeta.go)
+  })
   if (currentContents.events) {
     currentContents.events()
   }
@@ -541,9 +618,11 @@ function initHighlightForAuthor(currentState) {
     return false
   }
   return newContents = {
+    title: widgetTitle,
     para: customMessage,
     hidden: false,
-    buttons: [closeButton]
+    buttons: [],
+    topButtons: [closeButton]
   }
 }
 
@@ -556,9 +635,11 @@ function getCoralWindow(comment) {
   catch (error) {
     console.error(error)
     let errorContents = {
+      title: widgetTitle,
       para: `We have encountered an error connecting to Coral. The event that ran too soon was ${comment.contents.event_name}. Please make a note of this and report it to Matt or Ali. Thank you. You can dismiss this window and continue if Coral is appearing correctly below.`,
       hidden: false,
-      buttons: [closeButton]
+      topButtons: [closeButton],
+      buttons: []
     }
     transitionWidget(errorContents)
     return false;
@@ -584,24 +665,24 @@ function getSlugFromUrl(urlString) {
 const highlightedCommentTemplate = (content) => {
   return `
   <div class="related-story highlighted-comment" data-comment-id="${content.comment_id}">
-  <h3 class="related-story-suggestion">On <span class="highlighted-comment-date">22-09-2020</span>
-      <span class="highlighted-comment-author">${content.commenter_name}</span> commented:</h3>
-
-  <div class="related-story-container">
+    <h3 class="related-story-suggestion">On 
+      <span class="highlighted-comment-date">22-09-2020</span>
+      <a href="#gfw-menu-container"><span class="highlighted-comment-author">${content.commenter_name}</span>
+      commented:</a>
+    </h3>
+    <div class="related-story-container">
       <div class="article-list article-list--related-story no-image">
-          <div><a class="article-list__title" href="#gfw-menu-container">
-                  ${content.commenter_comment}
-              </a></div>
-          <div class="related-story-meta">
-              <p>
-                  This comment has been highlighted by the article's author and the
-                  commenter is enjoying a small percentage of this page's revenue. <a
-                      style="font-size: inherit; color: inherit; display: inherit;"
-                      class="article-list__title" href="#gfw-menu-container">Find out more</a></p>
+        <div class="article-page__rich-text">
+          <div class="rich-text">
+            ${content.commenter_comment}
           </div>
+        </div>
       </div>
+      <div class="related-story-meta">
+        <p>This comment has been highlighted by the article's author and the commenter is enjoying a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit; display: inherit;" class="article-list__title" href="#gfw-menu-container">Find out more</a></p>
+      </div>
+    </div>
   </div>
-</div>
   `
 }
 
@@ -732,9 +813,11 @@ window.addEventListener('load', () => {
 
 function showLoadingAnimation(customMessage, cb) {
   let contents = {
+    title: widgetTitle,
     para: customMessage,
     hidden: false,
-    buttons: [closeButton]
+    buttons: [],
+    topButtons: [minimizeButton]
   }
   transitionWidget(contents)
   let loading = document.querySelector('#loading')
@@ -802,9 +885,11 @@ function checkHighlightedComment(comment, commentFromIframe) {
     }
   }
   let newContents = {
+    title: widgetTitle,
     para: customMessage,
     hidden: false,
-    buttons: [closeButton]
+    buttons: [],
+    topButtons: [minimizeButton]
   }
 
   gotScrollButton && newContents.buttons.push(scrollButton)
