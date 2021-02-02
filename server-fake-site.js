@@ -5,7 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 // Constants
-const SITE_PORT = process.env.SITE_PORT || 8080;
+const SITE_PORT = process.env.SITE_PORT || 2000;
 const SITE_HOST = process.env.SITE_HOST || '0.0.0.0';
 
 // App
