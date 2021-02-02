@@ -73,7 +73,7 @@ You should now be able to access the development oD website at [http://localhost
 
 In a new terminal window, run `npm run watch:service`
 
-### Coral Talk Step 3: run and install a local Coral Talk instance
+### Coral Talk Step 3: run and install a local Coral Talk instance
 
 Our forked Coral Talk requests a JS file from this service. We need it to load our local version for local development. Open `src/core/server/app/views/templates/base.html` and comment out the staging URL and add the local URL:
 
@@ -93,7 +93,7 @@ You should now be able to access the Coral Talk install page at [http://localhos
 
 Follow the Coral Talk installation steps. The only value that matters is the Site Permitted Domains. This needs to be set to the URL of our fake site above: http://localhost:2000
 
-Once install is complete, you should be able to see the Coral comments panel at the bottom of an article page: [http://localhost:8080/articles/hello-world](http://localhost:2000/articles/hello-world])
+Once install is complete, you should be able to see the Coral comments panel at the bottom of an article page: [http://localhost:2000/articles/hello-world](http://localhost:2000/articles/hello-world])
 
 (If this hasn't worked, check the ports are 4000 for the Incentives Service and 3000 for Coral Talk. Make sure you have copied .env.default to .env in the code for this project.)
 
