@@ -50,7 +50,7 @@ Secondly, clone openDemocracy's forked Coral Talk:
 
 We need a Coral Talk instance for the service to interact with. openDemocracy's [forked version](https://github.com/openDemocracy-org/talk) requests a JS file from this service [./views/iframe.js](./views/iframe.js), allowing us to run custom JS within the Coral Talk iframe. That's the only difference.
 
-On the `next` branch of your cloned `talk`, run `$ npm install`
+On the `main` branch of your cloned `talk`, run `$ npm install`
 
 ### Coral Talk Step 2: download docker database images
 
@@ -67,13 +67,17 @@ $ docker run -d -p 6379:6379 --restart always --name redis redis:3.2
 
 Clone this project and `npm install`. Copy `.env.default` to `.env`. 
 
-Run `npm run start` to start the server. If you want to work on the project productively you can run `npm run watch` and the server will reload.
+Run `npm run watch:fake-site` to start the fake site.
 
-You should now be able to access the development oD website at [http://localhost:8080/articles/hello-world](http://localhost:8080/articles/hello-world]). 
+You should now be able to access the development oD website at [http://localhost:8080/articles/hello-world](http://localhost:2000/articles/hello-world]).
+
+In a new terminal window, run `npm run watch:service`
 
 ### Coral Talk Step 3: run and install a local Coral Talk instance
 
-Our forked Coral Talk requests a JS file from this service. We need it to load our local version for local development. Open `src/core/server/app/views/templates/base.html` and comment out the staging URL and uncomment the local URL. 
+Our forked Coral Talk requests a JS file from this service. We need it to load our local version for local development. Open `src/core/server/app/views/templates/base.html` and comment out the staging URL and add the local URL:
+
+`<script src="https://localhost:4000/assets/iframe.js"></script>`
 
 Coral's setup docs say you can just start the service now, but we've only had success running the build command first:
 
@@ -87,12 +91,11 @@ You should now be able to access the Coral Talk install page at [http://localhos
 
 ### Connecting them up
 
-Follow the Coral Talk installation steps. The only value that matters is the Site Permitted Domains. This needs to be set to the URL of our incentives service above: http://localhost:8080
+Follow the Coral Talk installation steps. The only value that matters is the Site Permitted Domains. This needs to be set to the URL of our fake site above: http://localhost:2000
 
-Once install is complete, you should be able to see the Coral comments panel at the bottom of an article page: [http://localhost:8080/articles/hello-world](http://localhost:8080/articles/hello-world])
+Once install is complete, you should be able to see the Coral comments panel at the bottom of an article page: [http://localhost:8080/articles/hello-world](http://localhost:2000/articles/hello-world])
 
-(If this hasn't worked, check the ports are 8080 for the Incentives Service and 3000 for Coral Talk. Make sure you have copied .env.default to .env in the code for this project.)
+(If this hasn't worked, check the ports are 4000 for the Incentives Service and 3000 for Coral Talk. Make sure you have copied .env.default to .env in the code for this project.)
 
-Within your Coral Talk instance you need to create an External Moderation phase, an endpoint where all the comments get sent to. Our handler in [./server.js](./server.js) is listening on `/handle-comment` so the URL should be http://localhost:8080/handle-comment. You also need to create a webhook endpoint that gets notified of Coral's "STORY_CREATED" event. The URL for this is http://localhost:8080/create-story.
-
+Within your Coral Talk instance you need to create an External Moderation phase, an endpoint where all the comments get sent to. Our handler in [./server.js](./server.js) is listening on `/handle-comment` so the URL should be http://localhost:4000/handle-comment. 
 

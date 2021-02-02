@@ -8,7 +8,7 @@ const helmet = require('helmet')
 const MongoClient = require('mongodb').MongoClient;
 
 // Constants
-const SERVICE_PORT = process.env.SERVICE_PORT || 8080;
+const SERVICE_PORT = process.env.SERVICE_PORT || 4000;
 const SERVICE_HOST = process.env.SERVICE_HOST || '0.0.0.0';
 const MONGO_URL = process.env.MONGO;
 
