@@ -193,7 +193,7 @@ const styles = () => {
 }
 
 function insertStyles() {
-  let node = document.createElement("style")
+  let node = document.createElement('style')
   let styleEl = document.querySelector('head').appendChild(node)
   styleEl.innerHTML = styles()
   gfwStlyesInserted = true;
@@ -202,8 +202,8 @@ function insertStyles() {
 // Generic components and actions
 
 const resetButton = {
-  label: "Reset",
-  id: "reset-button",
+  label: 'Reset',
+  id: 'reset-button',
   events: null,
   go: function () {
     updateGfwState({
@@ -214,8 +214,8 @@ const resetButton = {
 }
 
 const closeButton = {
-  label: "Close",
-  id: "close-button",
+  label: 'Close',
+  id: 'close-button',
   events: null,
   go: function () {
     closeWidget()
@@ -223,8 +223,8 @@ const closeButton = {
 }
 
 const minimizeButton = {
-  label: "Minimize",
-  id: "minimize-button",
+  label: 'Minimize',
+  id: 'minimize-button',
   events: null,
   go: function () {
     minimizeWidget()
@@ -250,11 +250,11 @@ function closeWidget() {
 
 let startingMonetizationContents = {
   title: `Better comments online?`,
-  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href="/rewardcomments" target="_blank">Learn more here.</a>`,
+  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank'>Learn more here.</a>`,
   topButtons: [minimizeButton],
   buttons: [{
-    label: "Click here if you are ready to support",
-    id: "proceed-button",
+    label: 'Click here if you are ready to support',
+    id: 'proceed-button',
     events: null,
     go: function () {
       transitionWidget(secondMonetizationContents)
@@ -340,7 +340,7 @@ const commenterFlowSubmitWallet = () => {
     topButtons: [minimizeButton]
   }
   let message = {
-    contents: { "event_name": "NEW_WALLET", "wallet": `${wallet}`, }
+    contents: { 'event_name': 'NEW_WALLET', 'wallet': `${wallet}`, }
   }
   postMessage(message)
   transitionWidget(newContents)
@@ -503,7 +503,7 @@ function hideCogMenu() {
 function handleAuthorshipClaim(loadingString) {
   toggleMenu(); // Hide the button
   postMessage({
-    contents: { "event_name": "AUTHOR_CANDIDATE", "uuid": sessionUUID }
+    contents: { 'event_name': 'AUTHOR_CANDIDATE', 'uuid': sessionUUID }
   })
   showLoadingAnimation(loadingString);
   const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
@@ -594,7 +594,7 @@ function gfwGotSignedOutUser() {
   sessionUUID = uuidv4()
   updateGfwState(state)
   postMessage({
-    contents: { "event_name": "CANCEL_HIGHLIGHT_COMMENTS" }
+    contents: { 'event_name': 'CANCEL_HIGHLIGHT_COMMENTS' }
   })
   closeWidget()
   hideCogMenu()
@@ -618,7 +618,7 @@ function initHighlightForAuthor(currentState) {
     customMessage = 'Your Coral account has been verified as the author of this article. You can now use the highlight comment buttons in the comment thread to pick a highlighted comment';
     coralReadyActions.push(function () {
       let message = {
-        contents: { "event_name": "INIT_HIGHLIGHT_COMMENTS" }
+        contents: { 'event_name': 'INIT_HIGHLIGHT_COMMENTS' }
       }
       postMessage(message)
     })
@@ -626,8 +626,8 @@ function initHighlightForAuthor(currentState) {
   } else if (authorCommentId && currentState.coralUserId && authorCommentId !== currentState.coralUserId) {
     customMessage = 'We have verified another account as the author of this article. Please check and try again.'
   } else if (!authorCommentId && currentState.coralUserId) {
-    customMessage = `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href="mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${currentState.coralUserId}%0D%0APlease add my ID to Wagtail!">Generate email to submit claim</a><br/>
-      <a href="{{pageRootUrl}}${window.location.pathname}?caid=${currentState.coralUserId}">Test only: simulate confirmed claim.</a>
+    customMessage = `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href='mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${currentState.coralUserId}%0D%0APlease add my ID to Wagtail!'>Generate email to submit claim</a><br/>
+      <a href='{{pageRootUrl}}${window.location.pathname}?caid=${currentState.coralUserId}'>Test only: simulate confirmed claim.</a>
       `
   } else if (currentState.coralUserId === null && currentState.authorshipClaimed) {
     customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
@@ -666,7 +666,7 @@ function getCoralWindow(comment) {
 function postMessage(comment) {
   let coralWindow = getCoralWindow(comment)
   if (coralWindow) {
-    coralWindow.postMessage(comment, "{{coralRootUrl}}")
+    coralWindow.postMessage(comment, '{{coralRootUrl}}')
   }
 }
 
@@ -841,16 +841,16 @@ function showLoadingAnimation(customMessage, cb) {
   }
   let ping = setInterval(() => {
     let message = {
-      contents: { "event_name": "PING", }
+      contents: { 'event_name': 'PING', }
     }
     let coralWindow = getCoralWindow()
-    coralWindow.postMessage(message, "{{coralRootUrl}}")
+    coralWindow.postMessage(message, '{{coralRootUrl}}')
   }, 50);
 
   const listenForResponse = (event) => {
-    if (event.origin !== "{{coralRootUrl}}")
+    if (event.origin !== '{{coralRootUrl}}')
       return;
-    if (event.data === "PONG") {
+    if (event.data === 'PONG') {
       if (cb) {
         cb()
       }
@@ -859,11 +859,11 @@ function showLoadingAnimation(customMessage, cb) {
       }, 1000)
       handleCoralReady()
 
-      window.removeEventListener("message", listenForResponse)
+      window.removeEventListener('message', listenForResponse)
       clearInterval(ping)
     }
   }
-  window.addEventListener("message", listenForResponse);
+  window.addEventListener('message', listenForResponse);
 }
 
 
@@ -871,8 +871,8 @@ function checkHighlightedComment(comment, commentFromIframe) {
 
 
   const scrollButton = {
-    label: "View highlighted comment",
-    id: "scroll-button",
+    label: 'View highlighted comment',
+    id: 'scroll-button',
     events: null,
     go: function () {
       document.getElementById('highlighted-comment').scrollIntoView({
@@ -911,15 +911,15 @@ function checkHighlightedComment(comment, commentFromIframe) {
   return newContents;
 }
 
-window.addEventListener("message", (event) => {
-  if (event.origin !== "{{coralRootUrl}}")
+window.addEventListener('message', (event) => {
+  if (event.origin !== '{{coralRootUrl}}')
     return;
 
   if (event.data.event_name === 'START_LOADING') {
     showLoadingAnimation('Loading')
   }
 
-  if (event.data.event_name === "START_HIGHLIGHT_COMMENT") {
+  if (event.data.event_name === 'START_HIGHLIGHT_COMMENT') {
     showLoadingAnimation('Highlighting comment', function () {
 
       let commentFromIframe = event.data.comment
