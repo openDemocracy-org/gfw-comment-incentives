@@ -17,13 +17,13 @@ function eventFire(el, etype) {
   }
 }
 
-window.addEventListener("message", (event) => {
+window.addEventListener('message', (event) => {
 
   if (event.data.contents) {
     let eventName = event.data.contents.event_name
     if (AllowedDomEvents.includes(eventName) && eventName === 'PING') {
       if (coralRecentlyLoaded) {
-        event.source.postMessage("PONG", event.origin);
+        event.source.postMessage('PONG', event.origin);
       }
       return;
     }
@@ -79,26 +79,27 @@ function addHighlightEvents(triggeringEvent) {
         let buttonElement = document.createElement('button')
         buttonElement.classList.add('gfw-button')
         buttonElement.innerHTML = 'Highlight comment'
-        comment.insertAdjacentElement("afterend", buttonElement)
+        comment.insertAdjacentElement('afterend', buttonElement)
         buttonElement.addEventListener('click', function () {
           triggeringEvent.source.postMessage({
-            "event_name": "START_LOADING"
+            'event_name': 'START_LOADING'
           }, triggeringEvent.origin);
           setTimeout(function () { // wait for the loading animation to kick in
             let commenter_name = comment.querySelector('.coral-comment-username span').innerHTML;
             let timestamp = comment.querySelector('.coral-comment-timestamp').getAttribute('datetime');
             let comment_id = comment.getAttribute('id')
             let commentHTML = comment.querySelector('.coral-comment-content').innerHTML
+            let text = commentHTML.replace(/"/g, "'")
             let commentWithMeta = {
-              "event_name": "HIGHLIGHT_COMMENT",
-              "commenter_comment": commentHTML,
-              "timestamp": timestamp,
-              "commenter_name": commenter_name,
-              "comment_id": comment_id
+              'event_name': 'HIGHLIGHT_COMMENT',
+              'commenter_comment': text,
+              'timestamp': timestamp,
+              'commenter_name': commenter_name,
+              'comment_id': comment_id
             }
             triggeringEvent.source.postMessage({
-              "event_name": "START_HIGHLIGHT_COMMENT",
-              "comment": commentWithMeta
+              'event_name': 'START_HIGHLIGHT_COMMENT',
+              'comment': commentWithMeta
             }, triggeringEvent.origin);
 
             submitComment(commentWithMeta)

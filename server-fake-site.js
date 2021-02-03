@@ -33,7 +33,7 @@ function createHash(str) {
     return hash;
 }
 
-app.get('/', slashes(), function (req, res) {
+app.get(['/', '/perspective-api-test'], slashes(), function (req, res) {
 
     let protocol = process.env.PROTOCOL || 'https://'
     let pageSlug = req.originalUrl

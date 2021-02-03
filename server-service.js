@@ -184,13 +184,22 @@ function getSlugFromUrl(urlString) {
 }
 
 app.post("/handle-comment", (req, res) => {
-    let storyUrl = getStoryUrlFromComment(req.body)
-    let storySlug = getSlugFromUrl(storyUrl)
+
     try {
         let body = req.body.comment.body
-
         let b1 = body.slice(5)
         let b2 = b1.slice(0, -10)
+        let openingContainer = 'commenter_comment":'
+        let openingPosition = b2.indexOf(openingContainer)
+         if (openingPosition > -1) {
+            let openingPositionStart = openingPosition + openingContainer.length + 1
+            let closingContainer = ',"timestamp'
+            let closingPosition = b2.indexOf(closingContainer) - 1
+            let comment = JSON.stringify(b2.slice(openingPositionStart, closingPosition))
+            let firstHalf = b2.split(openingContainer)[0] + openingContainer
+            let secondHalf = closingContainer + b2.split(closingContainer)[1]
+            b2 = firstHalf + comment + secondHalf            
+        }
         let sentJson = JSON.parse(b2)
         if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
             handleHighlightedComment(req.body, sentJson)
@@ -202,9 +211,11 @@ app.post("/handle-comment", (req, res) => {
             handleAuthorCandidate(req.body, sentJson)
             res.json({ status: 'REJECTED' });
         } else {
-            throw new Error('Not in the list')
+            // Not in list, must be OK
+            res.json({ status: 'REJECTED' });            
         }
     } catch (e) {
+        // Any errors must be normal comments
         console.log(e)
         res.json({ received: true });
     }
