@@ -1,6 +1,6 @@
 # GfW Comments Web Monetization Service
 
-This project is a proof of concept of openDemocracy's Grant for Web-funded project to bring novel incentives to commenting via web monetization of the [Coral Talk](https://github.com/coralproject/talk) open source comments platform.
+This project is openDemocracy's Grant for Web-funded project to bring novel incentives to commenting via web monetization of the [Coral Talk](https://github.com/coralproject/talk) open-source comments platform.
 
 ## Staging server
 
@@ -9,6 +9,8 @@ You can interact with the prototype by visiting:
 https://comment-service.staging-caprover.opendemocracy.net/articles/some-article/
 
 Where 'some-article' is a URL slug for an imaginary article on openDemocracy. Changing the slug will generate a new article.
+
+The article's author can highlight comments in Coral if their Coral user ID is included in the article page template as e.g. `<meta name="author_comment_id" content="89a0e9a2-32b1-468a-a101-7005b4cf62e3" />`. This is done through the CMS and can be mocked in this imaginary article by adding the Coral user id as a URL parameter to the above URL `?caid=89a0e9a2-32b1-468a-a101-7005b4cf62e3`. Coral user IDs can be found in the Coral admin dashboard.
 
 ## Communication from Coral Talk instance
 
