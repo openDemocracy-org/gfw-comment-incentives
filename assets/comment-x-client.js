@@ -39,7 +39,7 @@ const styles = () => {
   return `
     #gfw-widget {
       clear: both;
-      background: #0162B7;
+      background: #f1f6fb;
     }
 
     #gfw-widget.minimized #gfw-comments {
@@ -56,19 +56,22 @@ const styles = () => {
 
     #gfw-widget.minimized .minimized-contents {
       display: block;
+      margin-bottom: 2rem;
     }
 
     #gfw-comments {
+      padding-top: 30px;
       overflow-x: hidden;
       overflow-y: auto; 
       margin-bottom: 2rem;
   }
     @media (min-width: 600px) {
       #gfw-widget {
+        padding-top: 20px;
         position: fixed;
         right: 1rem;
-        bottom: 1rem;
-        width: 300px;
+        bottom: 3rem;
+        width: 500px;
         z-index: 2;
       }
       #gfw-comments { 
@@ -86,6 +89,16 @@ const styles = () => {
         margin-bottom: 1rem;
         color: #98D7FF;
     }
+    #gfw-comments .explainer-box .learn-more-text {
+      color: black;
+      font-size: 1.2rem;
+      text-decoration: underline;
+    }
+
+    #gfw-comments .explainer-box .learn-more-text:hover {
+      text-decoration: none;
+    }
+
     #reset-button {
       position: absolute;
       top: 1rem;
@@ -103,13 +116,32 @@ const styles = () => {
       font-weight: 700;
       text-underline-position: under;
     }
+    #gfw-widget #maximize-widget {
+      color: white;
+      background-color: #0162B7;
+      font-weight: bold;
+      padding: 15px 20px;
+    }
+    #gfw-widget #maximize-widget:hover {
+      background-color: rgb(38, 136, 227);
+    }
+
+    #gfw-comments .top-button {
+      color: #9B9B9B;
+      background-color: #f1f6fb;
+    }
+
+    #gfw-comments .top-button:hover {
+      text-decoration: underline;
+    }
+
     #gfw-comments .rich-text a {
       color: white;
       text-underline-position: auto;
     }
 
     #gfw-comments p {
-      margin-bottom: 1rem;
+      margin-bottom: 2.5rem;
       line-height: 1.47;
       padding: 0 2rem;
     }
@@ -129,7 +161,7 @@ const styles = () => {
 
     .top-bar {
       position: absolute;
-      top: 0.2rem;
+      top: 1rem;
       right: 0;
     }
 
@@ -250,7 +282,7 @@ function closeWidget() {
 
 let startingMonetizationContents = {
   title: `Better comments online?`,
-  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank'>Learn more here.</a>`,
+  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank' class="learn-more-text">Learn more here.</a>`,
   topButtons: [minimizeButton],
   buttons: [{
     label: 'Click here if you are ready to support',
@@ -264,7 +296,7 @@ let startingMonetizationContents = {
 
 let secondMonetizationContents = {
   title: widgetTitle,
-  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author. <a href="/rewardcomments" target="_blank">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
+  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author. <a href="/rewardcomments" target="_blank" class="learn-more-text">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
@@ -434,10 +466,10 @@ const menuTemplate = () => {
 const template = (content) => {
   return `
 <div class="minimized-contents" aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
-<section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary" ${content.hidden ? 'hidden="hidden"' : ''}>
+<section id="gfw-comments" class="donation-cta-contentbottom" ${content.hidden ? 'hidden="hidden"' : ''}>
     <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
     <h1 class="sidebar__heading mailing-list__sub-title">${content.title}</h1>
-    <p class="rich-text mailing-list__text">${content.para}</p>
+    <p class="explainer-box">${content.para}</p>
     ${content.buttons.map((button) => `<button class="main-button btn btn-primary" id="${button.id}">${button.label}</button>`).join('')}
     </section>
     `
