@@ -191,14 +191,14 @@ app.post("/handle-comment", (req, res) => {
         let b2 = b1.slice(0, -10)
         let openingContainer = 'commenter_comment":'
         let openingPosition = b2.indexOf(openingContainer)
-        if (openingPosition > -1) {
+         if (openingPosition > -1) {
             let openingPositionStart = openingPosition + openingContainer.length + 1
             let closingContainer = ',"timestamp'
             let closingPosition = b2.indexOf(closingContainer) - 1
             let comment = JSON.stringify(b2.slice(openingPositionStart, closingPosition))
             let firstHalf = b2.split(openingContainer)[0] + openingContainer
             let secondHalf = closingContainer + b2.split(closingContainer)[1]
-            b2 = firstHalf + comment + secondHalf
+            b2 = firstHalf + comment + secondHalf            
         }
         let sentJson = JSON.parse(b2)
         if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
@@ -212,12 +212,12 @@ app.post("/handle-comment", (req, res) => {
             res.json({ status: 'REJECTED' });
         } else {
             // Not in list, must be OK
-            res.json({ received: true });
+            res.json({ status: 'REJECTED' });            
         }
     } catch (e) {
-        // Reject any errors
+        // Any errors must be normal comments
         console.log(e)
-        res.json({ status: 'REJECTED' });
+        res.json({ received: true });
     }
 
 });
