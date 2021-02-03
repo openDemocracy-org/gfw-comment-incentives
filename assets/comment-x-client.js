@@ -40,7 +40,6 @@ const styles = () => {
     #gfw-widget {
       clear: both;
       background: #0162B7;
-      min-height: 1rem;
     }
 
     #gfw-widget.minimized #gfw-comments {
@@ -166,6 +165,16 @@ const styles = () => {
       background: linear-gradient(100deg, #eceff1 30%, #f6f7f8 50%, #eceff1 70%);
       background-size: 400%;
       animation: loading 1.2s ease-in-out infinite;
+    }
+
+    .rich-text div {
+      color: #000;
+      font-weight: 400;
+      font-size: 1.13333rem;
+      line-height: 1.86667rem;
+      -webkit-font-smoothing: antialiased;
+      text-transform: none;
+      margin: 0 0 1rem 0;
     }
 
     input[name=wallet] {
@@ -665,21 +674,18 @@ function getSlugFromUrl(urlString) {
 const highlightedCommentTemplate = (content) => {
   return `
   <div class="related-story highlighted-comment" data-comment-id="${content.comment_id}">
-    <h3 class="related-story-suggestion">On 
-      <span class="highlighted-comment-date">22-09-2020</span>
-      <a href="#gfw-menu-container"><span class="highlighted-comment-author">${content.commenter_name}</span>
-      commented:</a>
+    <h3 class="related-story-suggestion">Highlighted comment, by <span class="highlighted-comment-author">${content.commenter_name}</span>
     </h3>
     <div class="related-story-container">
       <div class="article-list article-list--related-story no-image">
         <div class="article-page__rich-text">
-          <div class="rich-text">
-            ${content.commenter_comment}
+          <div class="rich-text">       
+            ${content.commenter_comment}       
           </div>
         </div>
       </div>
       <div class="related-story-meta">
-        <p>This comment has been highlighted by the article's author and the commenter is enjoying a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit; display: inherit;" class="article-list__title" href="#gfw-menu-container">Find out more</a></p>
+        <p>This comment has been highlighted by the article's author and the commenter is enjoying a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit;" class="article-list__title" href="/rewardcomments">Find out more</a></p>
       </div>
     </div>
   </div>

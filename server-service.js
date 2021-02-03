@@ -184,11 +184,8 @@ function getSlugFromUrl(urlString) {
 }
 
 app.post("/handle-comment", (req, res) => {
-    let storyUrl = getStoryUrlFromComment(req.body)
-    let storySlug = getSlugFromUrl(storyUrl)
     try {
         let body = req.body.comment.body
-
         let b1 = body.slice(5)
         let b2 = b1.slice(0, -10)
         let sentJson = JSON.parse(b2)
@@ -200,13 +197,15 @@ app.post("/handle-comment", (req, res) => {
             res.json({ status: 'REJECTED' });
         } else if (sentJson.event_name === 'AUTHOR_CANDIDATE') {
             handleAuthorCandidate(req.body, sentJson)
-            res.json({ status: 'REJECTED' });
+           
         } else {
-            throw new Error('Not in the list')
+            // Not in list, must be OK
+            res.json({ received: true });
         }
     } catch (e) {
+        // Reject any errors
         console.log(e)
-        res.json({ received: true });
+        res.json({ status: 'REJECTED' });
     }
 
 });
