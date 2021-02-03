@@ -424,9 +424,10 @@ const menuTemplate = () => {
   return ` 
     <button id="gfw-menu" aria-haspopup="true" aria-expanded="false">⚙     
     </button>
-    <div id="gfw-menu-contents" role="menu" hidden="hidden">
-        <button role="menuitem" id="btn-claim-article" class="btn btn-primary" tabindex="-1">Claim article authorship</button>
-    </div> 
+    <ul id="gfw-menu-contents" role="menu" hidden="hidden">
+        <li><button role="menuitem" id="btn-claim-article" class="btn btn-primary" tabindex="-1">Claim article authorship</button></li>
+        <li><button role="menuitem" id="btn-add-wallet" class="btn btn-primary" tabindex="-1">Submit wallet</button></li>
+    </ul> 
 `
 }
 
@@ -477,6 +478,12 @@ function showCogMenu() {
     }
   })
 
+  // Add wallet
+  let btnAddWallet = document.querySelector('#btn-add-wallet')
+  btnAddWallet.addEventListener('click', () => {
+    toggleMenu(); // Hide the button
+    transitionWidget(secondMonetizationContents)
+  })
   // Claim article authorship
   let btnClaimArticle = document.querySelector('#btn-claim-article')
   let state = getState()
@@ -527,6 +534,7 @@ function transitionWidget(someContents) {
   currentContents = newContents
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers(currentContents)
+  maximizeWidget()
 }
 
 function updateEventHandlers(currentContents) {
