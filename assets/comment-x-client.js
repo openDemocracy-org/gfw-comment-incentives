@@ -102,8 +102,7 @@ const styles = () => {
     }
 
     #gfw-comments .explainer-box .learn-more-text:hover {
-      text-decoration: none;
-      font-size: 16px;
+      text-decoration: none; 
     }
 
     #reset-button {
