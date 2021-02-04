@@ -38,8 +38,10 @@ const slug = getSlugFromUrl(window.location.pathname)
 const styles = () => {
   return `
     #gfw-widget {
-      clear: both;
-      background: #f1f6fb;
+      clear: both;      
+      width: 100%;
+      display: flex;
+      align-items:center;
     }
 
     #gfw-widget.minimized #gfw-comments {
@@ -55,27 +57,32 @@ const styles = () => {
     }
 
     #gfw-widget.minimized .minimized-contents {
-      display: block;
-      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
 
-    #gfw-comments {
-      padding-top: 30px;
+    .gfw-comments {
+      background: #f1f6fb;
+      position: relative;
+      padding-top: 40px;
       overflow-x: hidden;
       overflow-y: auto; 
-      margin-bottom: 2rem;
+      margin: 0 auto 2rem;
   }
     @media (min-width: 600px) {
       #gfw-widget {
-        padding-top: 20px;
         position: fixed;
         right: 1rem;
         bottom: 3rem;
-        width: 500px;
         z-index: 2;
       }
-      #gfw-comments { 
+      .gfw-comments { 
+        width: 500px;
         margin-bottom: 0rem;
+        border-radius: 10px;
+        box-shadow: 0px 0px 0px -4px rgba(39,55,74,.25), 0 15px 40px 10px rgba(39,55,74,.25);
     }
     }
 
@@ -141,7 +148,7 @@ const styles = () => {
     }
 
     #gfw-comments p {
-      margin-bottom: 2.5rem;
+      margin: 0.75rem 0 1rem 0;
       line-height: 1.47;
       padding: 0 2rem;
     }
@@ -161,8 +168,8 @@ const styles = () => {
 
     .top-bar {
       position: absolute;
-      top: 1rem;
-      right: 0;
+      top: 0;
+      right: 0.5rem;
     }
 
     #gfw-menu-container {      
@@ -171,7 +178,7 @@ const styles = () => {
       float: right;
       width: 50%;
       text-align: right;
-      z-index:1;
+      z-index:2;
     }
     #gfw-menu-contents {
       width: 100%;
@@ -296,7 +303,7 @@ let startingMonetizationContents = {
 
 let secondMonetizationContents = {
   title: widgetTitle,
-  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author. <a href="/rewardcomments" target="_blank" class="learn-more-text">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
+  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
@@ -472,8 +479,8 @@ const menuTemplate = () => {
 
 const template = (content) => {
   return `
-<div class="minimized-contents" aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
-<section id="gfw-comments" class="donation-cta-contentbottom" ${content.hidden ? 'hidden="hidden"' : ''}>
+<div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
+<section id="gfw-comments" class="donation-cta-contentbottom gfw-comments" ${content.hidden ? 'hidden="hidden"' : ''}>
     <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
     <h1 class="sidebar__heading mailing-list__sub-title">${content.title}</h1>
     <p class="explainer-box">${content.para}</p>
