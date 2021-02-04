@@ -358,7 +358,10 @@ let startingStandardContents = {
   events: null
 }
 
-let startingContents = gotMonetizationTag ? startingMonetizationContents : startingStandardContents;
+
+let state = getState();
+let monetizationContents = state.walletSubmitted ? startingStandardContents : startingMonetizationContents
+let startingContents = gotMonetizationTag ? monetizationContents : startingStandardContents;
 let currentContents = startingContents; // Global content state
 
 const commenterFlowSubmitWallet = () => {
@@ -447,7 +450,11 @@ const commenterFlowHandleWalletSuccess = {
     If an author chooses to highlight your comment, we will use it to share some of the page's revenue with you :)
     `,
   hidden: false,
-  events: null,
+  events: () => {
+    updateGfwState({
+      walletSubmitted: true
+    })
+  },
   buttons: [closeButton],
   topButtons: [minimizeButton]
 }
