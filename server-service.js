@@ -4,6 +4,7 @@ const cors = require('cors')
 const express = require('express');
 const bodyParser = require('body-parser');
 const helmet = require('helmet')
+const nodemailer = require('nodemailer');
 
 const MongoClient = require('mongodb').MongoClient;
 
@@ -25,6 +26,18 @@ app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.raw({ type: "application/json" }))
 app.use(express.static('public'))
+
+
+// create reusable transporter object using the default SMTP transport
+const transporter = nodemailer.createTransport({
+    port: 465,  // true for 465, false for other ports
+    host: "smtp.gmail.com",
+    auth: {
+        user: process.env.OD_FROM_GMAIL,
+        pass: process.env.OD_FROM_GMAIL_PASSWORD,
+    },
+    secure: true,
+});
 
 const mongoClient = new MongoClient(MONGO_URL, { useUnifiedTopology: true });
 
@@ -150,7 +163,7 @@ async function handleHighlightedComment(comment, sentDetails) {
 }
 
 
-function handleAuthorCandidate(comment, sentDetails) {
+async function handleAuthorCandidate(comment, sentDetails) {
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
     let toStore = {
@@ -158,6 +171,35 @@ function handleAuthorCandidate(comment, sentDetails) {
     }
     let fileName = `${storySlug}-authors`;
     addToDb(fileName, toStore);
+
+    const coralDb = mongoClient.db('coral')
+    const coralCursor = await coralDb.collection('users').find({ id: comment.author.id })
+    let coralDocs = [];
+    while (await coralCursor.hasNext()) {
+        const doc = await coralCursor.next()
+        coralDocs.push(doc)
+    }
+    if (coralDocs.length > 0) {
+        let claimingAuthor = coralDocs[0];
+        let claimingAuthorEmail = claimingAuthor.email;
+        let claimingAuthorUsername = claimingAuthor.username;
+        const subjectString = `New authorship claim: ${claimingAuthorUsername}`;
+        const emailString = `There has been an authorship claim: ${claimingAuthorEmail}: ${comment.author.id}. Please delete this email once you have either discarded it or added the CoralTalk ID to the author's Wagtail profile.`
+        const mailData = {
+            from: process.env.OD_FROM_GMAIL,  // sender address
+            to: process.env.OD_EDITOR_EMAIL,   // list of receivers
+            subject: subjectString,
+            text: emailString,
+            html: `<b>Hey there! </b>
+                <br> ${emailString} <br/>`,
+        };
+        transporter.sendMail(mailData, function (err, info) {
+            if (err)
+                console.log(err)
+            else
+                console.log(info);
+        });
+    }
 }
 
 function handleNewWallet(comment, sentDetails) {
@@ -191,14 +233,14 @@ app.post("/handle-comment", (req, res) => {
         let b2 = b1.slice(0, -10)
         let openingContainer = 'commenter_comment":'
         let openingPosition = b2.indexOf(openingContainer)
-         if (openingPosition > -1) {
+        if (openingPosition > -1) {
             let openingPositionStart = openingPosition + openingContainer.length + 1
             let closingContainer = ',"timestamp'
             let closingPosition = b2.indexOf(closingContainer) - 1
             let comment = JSON.stringify(b2.slice(openingPositionStart, closingPosition))
             let firstHalf = b2.split(openingContainer)[0] + openingContainer
             let secondHalf = closingContainer + b2.split(closingContainer)[1]
-            b2 = firstHalf + comment + secondHalf            
+            b2 = firstHalf + comment + secondHalf
         }
         let sentJson = JSON.parse(b2)
         if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
@@ -212,7 +254,7 @@ app.post("/handle-comment", (req, res) => {
             res.json({ status: 'REJECTED' });
         } else {
             // Not in list, must be OK
-            res.json({ status: 'REJECTED' });            
+            res.json({ status: 'REJECTED' });
         }
     } catch (e) {
         // Any errors must be normal comments

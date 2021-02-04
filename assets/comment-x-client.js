@@ -658,8 +658,7 @@ function initHighlightForAuthor(currentState) {
   } else if (authorCommentId && currentState.coralUserId && authorCommentId !== currentState.coralUserId) {
     customMessage = 'We have verified another account as the author of this article. Please check and try again.'
   } else if (!authorCommentId && currentState.coralUserId) {
-    customMessage = `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href='mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${currentState.coralUserId}%0D%0APlease add my ID to Wagtail!'>Generate email to submit claim</a><br/>
-      <a href='{{pageRootUrl}}${window.location.pathname}?caid=${currentState.coralUserId}'>Test only: simulate confirmed claim.</a>
+    customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor.<br/> You will receive an email letting you know when you can come back and highlight comments.</a>
       `
   } else if (currentState.coralUserId === null && currentState.authorshipClaimed) {
     customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
