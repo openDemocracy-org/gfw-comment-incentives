@@ -97,13 +97,13 @@ const styles = () => {
         color: #98D7FF;
     }
     #gfw-comments .explainer-box .learn-more-text {
-      color: black;
-      font-size: 1.2rem;
+      color: black; 
       text-decoration: underline;
     }
 
     #gfw-comments .explainer-box .learn-more-text:hover {
       text-decoration: none;
+      font-size: 16px;
     }
 
     #reset-button {
@@ -151,6 +151,7 @@ const styles = () => {
       margin: 0.75rem 0 1rem 0;
       line-height: 1.47;
       padding: 0 2rem;
+      font-size: 16px;
     }
     #gfw-comments button:hover,
     #gfw-comments .rich-text a:hover,
@@ -289,10 +290,10 @@ function closeWidget() {
 
 let startingMonetizationContents = {
   title: `Better comments online?`,
-  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank' class="learn-more-text">Learn more here.</a>`,
+  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank' class="learn-more-text">Learn more »</a>`,
   topButtons: [minimizeButton],
   buttons: [{
-    label: 'Click here if you are ready to support',
+    label: "Count me in",
     id: 'proceed-button',
     events: null,
     go: function () {
@@ -303,7 +304,7 @@ let startingMonetizationContents = {
 
 let secondMonetizationContents = {
   title: widgetTitle,
-  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
+  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Read the instructions »</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
@@ -672,7 +673,7 @@ function initHighlightForAuthor(currentState) {
   } else if (authorCommentId && currentState.coralUserId && authorCommentId !== currentState.coralUserId) {
     customMessage = 'We have verified another account as the author of this article. Please check and try again.'
   } else if (!authorCommentId && currentState.coralUserId) {
-    customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor.<br/> You will receive an email letting you know when you can come back and highlight comments.</a>
+    customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor. You will receive an email letting you know when you can come back and highlight comments.</a>
       `
   } else if (currentState.coralUserId === null && currentState.authorshipClaimed) {
     customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
