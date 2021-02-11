@@ -859,6 +859,12 @@ async function startRevShare() {
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
+    console.log('Monetization tag appended!')
+    if (window.initMonetizationAnalytics) {
+      window.initMonetizationAnalytics()
+    } else {
+      console.log('No monetization analytics function found')
+    }
   }
 }
 
