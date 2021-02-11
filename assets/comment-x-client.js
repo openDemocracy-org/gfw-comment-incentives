@@ -690,9 +690,17 @@ function initHighlightForAuthor(currentState) {
 
 function getCoralWindow(comment) {
   try {
-    var iframe = document.querySelector('#coral_thread_iframe');
-    var coralWindow = iframe.contentWindow;
-    return coralWindow
+    if (comment.contents) {
+      if (comment.contents.event_name) {
+        var iframe = document.querySelector('#coral_thread_iframe');
+        var coralWindow = iframe.contentWindow;
+        return coralWindow
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
   }
   catch (error) {
     console.error(error)
@@ -895,7 +903,9 @@ function showLoadingAnimation(customMessage, cb) {
       contents: { 'event_name': 'PING', }
     }
     let coralWindow = getCoralWindow()
-    coralWindow.postMessage(message, '{{coralRootUrl}}')
+    if (coralWindow) {
+      coralWindow.postMessage(message, '{{coralRootUrl}}')
+    }
   }, 50);
 
   const listenForResponse = (event) => {
