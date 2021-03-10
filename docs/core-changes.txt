@@ -1,6 +1,6 @@
-# Changes required to Coral Talk
+# Changes required to Coral Talk to make it run with this extension.
 
-Currently the only change is the addition of a script tag at the bottom of their base template:
+As of version 6.6.2 the only change is the addition of a script tag at the bottom of their base template:
 
 `src\core\server\app\views\templates\base.html`
 `++ <script src="[env.SERVICE_ROOT_URL]/assets/iframe.js"></script>`
