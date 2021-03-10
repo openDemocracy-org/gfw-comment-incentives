@@ -754,6 +754,29 @@ const highlightedCommentTemplate = (content) => {
 }
 
 
+const highlightedParliaProposalTemplate = (content) => {
+  return `
+  <div class="related-story highlighted-comment" data-comment-id="${content.comment_id}">
+    <h3 class="related-story-suggestion">Highlighted comment, by <span class="highlighted-comment-author">${content.commenter_name}</span>
+    </h3>
+    <div class="related-story-container">
+      <div class="article-list article-list--related-story no-image">
+        <div class="article-page__rich-text">
+          <div class="rich-text">       
+            <blockquote class="parlia-embed"><p lang="en" dir=”ltr”><a href="https://www.parlia.com/c/${content.commenter_comment}">Does the marketplace of ideas work?</a></p></blockquote><script async src="https://www.parlia.com/widgets/embed.js" charset="utf-8"></script>
+          </div>
+        </div>
+      </div>
+      <div class="related-story-meta">
+        <p>This comment has been highlighted by the article's author and the commenter is enjoying a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit;" class="article-list__title" href="/rewardcomments">Find out more</a></p>
+      </div>
+    </div>
+
+  </div>
+  `
+}
+
+
 
 async function getHighlightedComment() {
   if (authorCommentId) {
@@ -767,7 +790,11 @@ async function getHighlightedComment() {
           data = chosenComment[0]
           if (data.author_id === authorCommentId) {
             let highlightedCommentBox = document.querySelector('#highlighted-comment')
-            highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
+            if (data.commenter_comment.includes("PARLIA")) { 
+              highlightedCommentBox.innerHTML = highlightedParliaProposalTemplate(data)
+            } else {
+              highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
+            }
           }
         }
       }
