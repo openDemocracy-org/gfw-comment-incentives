@@ -14,7 +14,7 @@ The article's author can highlight comments in Coral if their Coral user ID is i
 
 ## Communication from Coral Talk instance
 
-This project is running at http://opendemocracy.net/newcommenteconomics
+This project is running at https://opendemocracy.net/paycommentauthors
 
 A staging Coral Talk instance is running at https://coral-talk.staging-caprover.opendemocracy.net. 
 
