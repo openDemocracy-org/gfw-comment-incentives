@@ -903,7 +903,7 @@ function showLoadingAnimation(customMessage, cb) {
     let message = {
       contents: { 'event_name': 'PING', }
     }
-    let coralWindow = getCoralWindow()
+    let coralWindow = getCoralWindow(message)
     if (coralWindow) {
       coralWindow.postMessage(message, '{{coralRootUrl}}')
     }
