@@ -867,9 +867,10 @@ async function startRevShare() {
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
-    console.log('Monetization tag appended!')
+    
     if (window.initMonetizationAnalytics) {
       window.initMonetizationAnalytics()
+      console.log('Monetization analytics event called.')
     } else {
       console.log('No monetization analytics function found')
     }
@@ -902,7 +903,7 @@ function showLoadingAnimation(customMessage, cb) {
     let message = {
       contents: { 'event_name': 'PING', }
     }
-    let coralWindow = getCoralWindow()
+    let coralWindow = getCoralWindow(message)
     if (coralWindow) {
       coralWindow.postMessage(message, '{{coralRootUrl}}')
     }
