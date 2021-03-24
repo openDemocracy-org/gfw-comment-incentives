@@ -103,3 +103,8 @@ Once install is complete, you should be able to see the Coral comments panel at 
 
 Within your Coral Talk instance you need to create an External Moderation phase, an endpoint where all the comments get sent to. Our handler in [./server.js](./server.js) is listening on `/handle-comment` so the URL should be http://localhost:4000/handle-comment. 
 
+
+## Incentives configuration
+
+This project was designed to explore how sharing micropayments in different proportions creates different incentives for users. The code that sets these proportions for article authors, comment authors and the publisher (i.e. the incentive levers) can be found in `comment-x-client.js` inside `function startRevShare()`.
+
