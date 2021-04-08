@@ -26,6 +26,7 @@
     "express": "^4.17.1",
     "helmet": "^4.4.1",
     "mongodb": "^3.6.3",
+    "nodemailer": "^6.4.17",
     "nodemon": "^2.0.6",
     "nunjucks": "^3.2.2"
   }

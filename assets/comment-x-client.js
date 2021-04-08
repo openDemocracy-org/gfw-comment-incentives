@@ -38,8 +38,10 @@ const slug = getSlugFromUrl(window.location.pathname)
 const styles = () => {
   return `
     #gfw-widget {
-      clear: both;
-      background: #0162B7;
+      clear: both;      
+      width: 100%;
+      display: flex;
+      align-items:center;
     }
 
     #gfw-widget.minimized #gfw-comments {
@@ -55,24 +57,32 @@ const styles = () => {
     }
 
     #gfw-widget.minimized .minimized-contents {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
 
-    #gfw-comments {
+    .gfw-comments {
+      background: #f1f6fb;
+      position: relative;
+      padding-top: 40px;
       overflow-x: hidden;
       overflow-y: auto; 
-      margin-bottom: 2rem;
+      margin: 0 auto 2rem;
   }
     @media (min-width: 600px) {
       #gfw-widget {
         position: fixed;
         right: 1rem;
-        bottom: 1rem;
-        width: 300px;
+        bottom: 3rem;
         z-index: 2;
       }
-      #gfw-comments { 
+      .gfw-comments { 
+        width: 500px;
         margin-bottom: 0rem;
+        border-radius: 10px;
+        box-shadow: 0px 0px 0px -4px rgba(39,55,74,.25), 0 15px 40px 10px rgba(39,55,74,.25);
     }
     }
 
@@ -86,6 +96,15 @@ const styles = () => {
         margin-bottom: 1rem;
         color: #98D7FF;
     }
+    #gfw-comments .explainer-box .learn-more-text {
+      color: black; 
+      text-decoration: underline;
+    }
+
+    #gfw-comments .explainer-box .learn-more-text:hover {
+      text-decoration: none; 
+    }
+
     #reset-button {
       position: absolute;
       top: 1rem;
@@ -103,15 +122,35 @@ const styles = () => {
       font-weight: 700;
       text-underline-position: under;
     }
+    #gfw-widget #maximize-widget {
+      color: white;
+      background-color: #0162B7;
+      font-weight: bold;
+      padding: 15px 20px;
+    }
+    #gfw-widget #maximize-widget:hover {
+      background-color: rgb(38, 136, 227);
+    }
+
+    #gfw-comments .top-button {
+      color: #9B9B9B;
+      background-color: #f1f6fb;
+    }
+
+    #gfw-comments .top-button:hover {
+      text-decoration: underline;
+    }
+
     #gfw-comments .rich-text a {
       color: white;
       text-underline-position: auto;
     }
 
     #gfw-comments p {
-      margin-bottom: 1rem;
+      margin: 0.75rem 0 1rem 0;
       line-height: 1.47;
       padding: 0 2rem;
+      font-size: 16px;
     }
     #gfw-comments button:hover,
     #gfw-comments .rich-text a:hover,
@@ -129,8 +168,8 @@ const styles = () => {
 
     .top-bar {
       position: absolute;
-      top: 0.2rem;
-      right: 0;
+      top: 0;
+      right: 0.5rem;
     }
 
     #gfw-menu-container {      
@@ -139,7 +178,7 @@ const styles = () => {
       float: right;
       width: 50%;
       text-align: right;
-      z-index:1;
+      z-index:2;
     }
     #gfw-menu-contents {
       width: 100%;
@@ -250,10 +289,10 @@ function closeWidget() {
 
 let startingMonetizationContents = {
   title: `Better comments online?`,
-  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank'>Learn more here.</a>`,
+  para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank' class="learn-more-text">Learn more »</a>`,
   topButtons: [minimizeButton],
   buttons: [{
-    label: 'Click here if you are ready to support',
+    label: "Count me in",
     id: 'proceed-button',
     events: null,
     go: function () {
@@ -264,7 +303,7 @@ let startingMonetizationContents = {
 
 let secondMonetizationContents = {
   title: widgetTitle,
-  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author. <a href="/rewardcomments" target="_blank">Instructions here.</a><br/><br/> Please enter your wallet address below:<br/>
+  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Read the instructions »</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
 `,
   hidden: false,
@@ -326,7 +365,10 @@ let startingStandardContents = {
   events: null
 }
 
-let startingContents = gotMonetizationTag ? startingMonetizationContents : startingStandardContents;
+
+let state = getState();
+let monetizationContents = state.walletSubmitted ? startingStandardContents : startingMonetizationContents
+let startingContents = gotMonetizationTag ? monetizationContents : startingStandardContents;
 let currentContents = startingContents; // Global content state
 
 const commenterFlowSubmitWallet = () => {
@@ -415,7 +457,11 @@ const commenterFlowHandleWalletSuccess = {
     If an author chooses to highlight your comment, we will use it to share some of the page's revenue with you :)
     `,
   hidden: false,
-  events: null,
+  events: () => {
+    updateGfwState({
+      walletSubmitted: true
+    })
+  },
   buttons: [closeButton],
   topButtons: [minimizeButton]
 }
@@ -433,11 +479,11 @@ const menuTemplate = () => {
 
 const template = (content) => {
   return `
-<div class="minimized-contents" aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
-<section id="gfw-comments" class="mailing-list mailing-list--wide mailing-list--primary" ${content.hidden ? 'hidden="hidden"' : ''}>
+<div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
+<section id="gfw-comments" class="donation-cta-contentbottom gfw-comments" ${content.hidden ? 'hidden="hidden"' : ''}>
     <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
     <h1 class="sidebar__heading mailing-list__sub-title">${content.title}</h1>
-    <p class="rich-text mailing-list__text">${content.para}</p>
+    <p class="explainer-box">${content.para}</p>
     ${content.buttons.map((button) => `<button class="main-button btn btn-primary" id="${button.id}">${button.label}</button>`).join('')}
     </section>
     `
@@ -626,8 +672,7 @@ function initHighlightForAuthor(currentState) {
   } else if (authorCommentId && currentState.coralUserId && authorCommentId !== currentState.coralUserId) {
     customMessage = 'We have verified another account as the author of this article. Please check and try again.'
   } else if (!authorCommentId && currentState.coralUserId) {
-    customMessage = `Your authorship claim is ready to send to Matt for confirmation.<br/> <a href='mailto:matthewlinares@opendemocracy.net?subject=Author CommentID for ${slug}&body=ID:${currentState.coralUserId}%0D%0APlease add my ID to Wagtail!'>Generate email to submit claim</a><br/>
-      <a href='{{pageRootUrl}}${window.location.pathname}?caid=${currentState.coralUserId}'>Test only: simulate confirmed claim.</a>
+    customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor. You will receive an email letting you know when you can come back and highlight comments.</a>
       `
   } else if (currentState.coralUserId === null && currentState.authorshipClaimed) {
     customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
@@ -645,9 +690,17 @@ function initHighlightForAuthor(currentState) {
 
 function getCoralWindow(comment) {
   try {
-    var iframe = document.querySelector('#coral_thread_iframe');
-    var coralWindow = iframe.contentWindow;
-    return coralWindow
+    if (comment.contents) {
+      if (comment.contents.event_name) {
+        var iframe = document.querySelector('#coral_thread_iframe');
+        var coralWindow = iframe.contentWindow;
+        return coralWindow
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
   }
   catch (error) {
     console.error(error)
@@ -814,6 +867,13 @@ async function startRevShare() {
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
+    
+    if (window.initMonetizationAnalytics) {
+      window.initMonetizationAnalytics()
+      console.log('Monetization analytics event called.')
+    } else {
+      console.log('No monetization analytics function found')
+    }
   }
 }
 
@@ -843,8 +903,10 @@ function showLoadingAnimation(customMessage, cb) {
     let message = {
       contents: { 'event_name': 'PING', }
     }
-    let coralWindow = getCoralWindow()
-    coralWindow.postMessage(message, '{{coralRootUrl}}')
+    let coralWindow = getCoralWindow(message)
+    if (coralWindow) {
+      coralWindow.postMessage(message, '{{coralRootUrl}}')
+    }
   }, 50);
 
   const listenForResponse = (event) => {

@@ -1,6 +1,6 @@
 # GfW Comments Web Monetization Service
 
-This project is a proof of concept of openDemocracy's Grant for Web-funded project to bring novel incentives to commenting via web monetization of the [Coral Talk](https://github.com/coralproject/talk) open source comments platform.
+This project is openDemocracy's Grant for Web-funded project to bring novel incentives to commenting via web monetization of the [Coral Talk](https://github.com/coralproject/talk) open-source comments platform.
 
 ## Staging server
 
@@ -10,7 +10,11 @@ https://comment-service.staging-caprover.opendemocracy.net/articles/some-article
 
 Where 'some-article' is a URL slug for an imaginary article on openDemocracy. Changing the slug will generate a new article.
 
+The article's author can highlight comments in Coral if their Coral user ID is included in the article page template as e.g. `<meta name="author_comment_id" content="89a0e9a2-32b1-468a-a101-7005b4cf62e3" />`. This is done through the CMS and can be mocked in this imaginary article by adding the Coral user id as a URL parameter to the above URL `?caid=89a0e9a2-32b1-468a-a101-7005b4cf62e3`. Coral user IDs can be found in the Coral admin dashboard.
+
 ## Communication from Coral Talk instance
+
+This project is running at http://opendemocracy.net/newcommenteconomics
 
 A staging Coral Talk instance is running at https://coral-talk.staging-caprover.opendemocracy.net. 
 
@@ -98,4 +102,9 @@ Once install is complete, you should be able to see the Coral comments panel at 
 (If this hasn't worked, check the ports are 4000 for the Incentives Service and 3000 for Coral Talk. Make sure you have copied .env.default to .env in the code for this project.)
 
 Within your Coral Talk instance you need to create an External Moderation phase, an endpoint where all the comments get sent to. Our handler in [./server.js](./server.js) is listening on `/handle-comment` so the URL should be http://localhost:4000/handle-comment. 
+
+
+## Incentives configuration
+
+This project was designed to explore how sharing micropayments in different proportions creates different incentives for users. The code that sets these proportions for article authors, comment authors and the publisher (i.e. the incentive levers) can be found in `comment-x-client.js` inside `function startRevShare()`.
 
