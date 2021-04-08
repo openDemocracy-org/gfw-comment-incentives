@@ -762,8 +762,8 @@ const highlightedParliaProposalTemplate = (content) => {
     <div class="related-story-container">
       <div class="article-list article-list--related-story no-image">
         <div class="article-page__rich-text">
-          <div class="rich-text">       
-            <blockquote class="parlia-embed"><p lang="en" dir=”ltr”><a href="https://www.parlia.com/c/${content.commenter_comment}">Does the marketplace of ideas work?</a></p></blockquote><script async src="https://www.parlia.com/widgets/embed.js" charset="utf-8"></script>
+          <div class="rich-text">
+          <blockquote class="parlia-embed"><p lang="en" dir="ltr"><a href="${content.commenter_comment}">${content.commenter_comment}</a></p></blockquote> 
           </div>
         </div>
       </div>
@@ -789,12 +789,25 @@ async function getHighlightedComment() {
           let chosenComment = data.filter(comment => comment.author_id === authorCommentId)
           data = chosenComment[0]
           if (data.author_id === authorCommentId) {
-            let highlightedCommentBox = document.querySelector('#highlighted-comment')
-            if (data.commenter_comment.includes("PARLIA")) { 
-              highlightedCommentBox.innerHTML = highlightedParliaProposalTemplate(data)
-            } else {
+            let highlightedCommentBox = document.querySelector('#highlighted-comment');
+            try {
+              if (data.commenter_comment.includes("https://www.parlia.com/c/")) {
+                var parliaUrlFirst = data.commenter_comment.split('"')[1]
+                var parliaUrl = parliaUrlFirst.split('"')[0]
+                data.commenter_comment = parliaUrl;
+                highlightedCommentBox.innerHTML = highlightedParliaProposalTemplate(data)
+                var ref = document.getElementsByTagName('script')[0];
+                var script = document.createElement('script');
+                script.src = "{{parliaUrl}}";
+                ref.parentNode.insertBefore(script, ref);
+              } else {
+                throw ('Not Parlia')
+              }
+            } catch (e) {
               highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
             }
+
+
           }
         }
       }
@@ -894,7 +907,7 @@ async function startRevShare() {
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
-    
+
     if (window.initMonetizationAnalytics) {
       window.initMonetizationAnalytics()
       console.log('Monetization analytics event called.')
