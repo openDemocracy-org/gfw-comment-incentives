@@ -763,7 +763,10 @@ const highlightedParliaProposalTemplate = (content) => {
       <div class="article-list article-list--related-story no-image">
         <div class="article-page__rich-text">
           <div class="rich-text">
-          <blockquote class="parlia-embed"><p lang="en" dir="ltr"><a href="${content.commenter_comment}">${content.commenter_comment}</a></p></blockquote> 
+          <blockquote class="parlia-embed"><p lang="en" dir="ltr"><a href="${content.parliaUrl}">${content.parliaUrl}</a></p></blockquote> 
+          </div>
+          <div class="rich-text">       
+            ${content.commenter_comment}       
           </div>
         </div>
       </div>
@@ -794,7 +797,7 @@ async function getHighlightedComment() {
               if (data.commenter_comment.includes("https://www.parlia.com/c/")) {
                 var parliaUrlFirst = data.commenter_comment.split('"')[1]
                 var parliaUrl = parliaUrlFirst.split('"')[0]
-                data.commenter_comment = parliaUrl;
+                data.parliaUrl = parliaUrl;
                 highlightedCommentBox.innerHTML = highlightedParliaProposalTemplate(data)
                 var ref = document.getElementsByTagName('script')[0];
                 var script = document.createElement('script');
