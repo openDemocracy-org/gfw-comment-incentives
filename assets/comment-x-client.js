@@ -754,6 +754,32 @@ const highlightedCommentTemplate = (content) => {
 }
 
 
+const highlightedParliaProposalTemplate = (content) => {
+  return `
+  <div class="related-story highlighted-comment" data-comment-id="${content.comment_id}">
+    <h3 class="related-story-suggestion">Highlighted comment, by <span class="highlighted-comment-author">${content.commenter_name}</span>
+    </h3>
+    <div class="related-story-container">
+      <div class="article-list article-list--related-story no-image">
+        <div class="article-page__rich-text">
+          <div class="rich-text">
+          <blockquote class="parlia-embed"><p lang="en" dir="ltr"><a href="${content.parliaUrl}">${content.parliaUrl}</a></p></blockquote> 
+          </div>
+          <div class="rich-text">       
+            ${content.commenter_comment}       
+          </div>
+        </div>
+      </div>
+      <div class="related-story-meta">
+        <p>This comment has been highlighted by the article's author and the commenter is enjoying a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit;" class="article-list__title" href="/rewardcomments">Find out more</a></p>
+      </div>
+    </div>
+
+  </div>
+  `
+}
+
+
 
 async function getHighlightedComment() {
   if (authorCommentId) {
@@ -766,8 +792,25 @@ async function getHighlightedComment() {
           let chosenComment = data.filter(comment => comment.author_id === authorCommentId)
           data = chosenComment[0]
           if (data.author_id === authorCommentId) {
-            let highlightedCommentBox = document.querySelector('#highlighted-comment')
-            highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
+            let highlightedCommentBox = document.querySelector('#highlighted-comment');
+            try {
+              if (data.commenter_comment.includes("https://www.parlia.com/c/")) {
+                var parliaUrlFirst = data.commenter_comment.split('"')[1]
+                var parliaUrl = parliaUrlFirst.split('"')[0]
+                data.parliaUrl = parliaUrl;
+                highlightedCommentBox.innerHTML = highlightedParliaProposalTemplate(data)
+                var ref = document.getElementsByTagName('script')[0];
+                var script = document.createElement('script');
+                script.src = "{{parliaUrl}}";
+                ref.parentNode.insertBefore(script, ref);
+              } else {
+                throw ('Not Parlia')
+              }
+            } catch (e) {
+              highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
+            }
+
+
           }
         }
       }
@@ -867,7 +910,7 @@ async function startRevShare() {
     newMonetizationTag.name = 'monetization'
     newMonetizationTag.content = pickPointer()
     document.head.appendChild(newMonetizationTag)
-    
+
     if (window.initMonetizationAnalytics) {
       window.initMonetizationAnalytics()
       console.log('Monetization analytics event called.')
