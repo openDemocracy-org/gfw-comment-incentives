@@ -4,7 +4,7 @@
   "description": "",
   "main": "server-fake-site.js",
   "scripts": {
-    "start": "node server-fake-site.js",
+    "start": "node server-service.js",
     "start:fake-site": "node server-fake-site.js",
     "watch:service": "nodemon -e js, --watch ./assets --watch ./server-service.js server-service.js",
     "watch:fake-site": "nodemon -e js,html --watch ./views --watch ./server-fake-site.js server-fake-site.js",
