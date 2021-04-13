@@ -15,4 +15,4 @@ RUN npm install
 # Bundle app source
 COPY . .
 
-CMD [ "node", "server-fake-site.js" ]
+CMD [ "node", "server-service.js" ]
