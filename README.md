@@ -1,4 +1,4 @@
-# GfW Comments Web Monetization Service
+# CommentX Monetization Service
 
 This project is openDemocracy's Grant for Web-funded project to bring novel incentives to commenting via web monetization of the [Coral Talk](https://github.com/coralproject/talk) open-source comments platform.
 
@@ -6,7 +6,7 @@ This project is openDemocracy's Grant for Web-funded project to bring novel ince
 
 You can interact with the prototype by visiting:
 
-https://comment-service.staging-caprover.opendemocracy.net/articles/some-article/
+https://opendemocracy.net/newmoney
 
 Where 'some-article' is a URL slug for an imaginary article on openDemocracy. Changing the slug will generate a new article.
 
