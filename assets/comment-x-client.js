@@ -1,6 +1,6 @@
 // Global variables
-
 const gfwCommentsActive = true;
+let panelSeen = false;
 let gfwPanelVisible = false;
 let gfwStlyesInserted = false;
 let menuRoot = document.getElementById('gfw-menu-container')
@@ -44,7 +44,8 @@ const styles = () => {
       align-items:center;
     }
 
-    #gfw-widget.minimized #gfw-comments {
+    #gfw-widget.minimized #gfw-comments,
+    #gfw-widget.hidden {
       display: none
     }
 
@@ -76,7 +77,7 @@ const styles = () => {
         position: fixed;
         right: 1rem;
         bottom: 3rem;
-        z-index: 2;
+        z-index: 3;
       }
       .gfw-comments { 
         width: 500px;
@@ -125,8 +126,6 @@ const styles = () => {
     #gfw-widget #maximize-widget {
       color: white;
       background-color: #0162B7;
-      font-weight: bold;
-      padding: 15px 20px;
     }
     #gfw-widget #maximize-widget:hover {
       background-color: rgb(38, 136, 227);
@@ -276,10 +275,20 @@ function minimizeWidget() {
   document.querySelector('#maximize-widget').addEventListener('click', maximizeWidget)
 }
 
+function hideWidget() {
+  document.querySelector('#gfw-widget').setAttribute('aria-hidden', 'true');
+  contentRoot.classList.add('hidden');
+}
+
 function maximizeWidget() {
   contentRoot.classList.remove('minimized')
   document.querySelector('.minimized-contents').setAttribute('aria-hidden', 'true')
   document.querySelector('#maximize-widget').removeEventListener('click', maximizeWidget)
+}
+
+function showWidget() {
+  document.querySelector('#gfw-widget').setAttribute('aria-hidden', 'false');
+  contentRoot.classList.remove('hidden');
 }
 
 function closeWidget() {
@@ -296,12 +305,22 @@ let startingMonetizationContents = {
     id: 'proceed-button',
     events: null,
     go: function () {
-      transitionWidget(secondMonetizationContents)
+      let state = getState();
+      let toContents = state.loggedIn ? submitWalletContents : promptLoginContents;
+      transitionWidget(toContents)
     }
   }]
 }
 
-let secondMonetizationContents = {
+let promptLoginContents = {
+  title: widgetTitle,
+  para: `To take part you need to register with or sign into our comments system.`,
+  hidden: false,
+  buttons: [],
+  topButtons: [minimizeButton],
+}
+
+let submitWalletContents = {
   title: widgetTitle,
   para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Read the instructions »</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
@@ -479,7 +498,7 @@ const menuTemplate = () => {
 
 const template = (content) => {
   return `
-<div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget">${content.title}</button></div>  
+<div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget" class="main-button btn btn-primary">${content.title}</button></div>  
 <section id="gfw-comments" class="donation-cta-contentbottom gfw-comments" ${content.hidden ? 'hidden="hidden"' : ''}>
     <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
     <h1 class="sidebar__heading mailing-list__sub-title">${content.title}</h1>
@@ -507,9 +526,10 @@ function toggleMenu() {
 function insertContent() { // Runs once at the beginning
   !gfwStlyesInserted && insertStyles()
   gfwPanelVisible = true;
-  showCogMenu()
+
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers(currentContents)
+  document.querySelector('#gfw-menu').removeAttribute('hidden')
 }
 
 function showCogMenu() {
@@ -528,7 +548,7 @@ function showCogMenu() {
   let btnAddWallet = document.querySelector('#btn-add-wallet')
   btnAddWallet.addEventListener('click', () => {
     toggleMenu(); // Hide the button
-    transitionWidget(secondMonetizationContents)
+    transitionWidget(submitWalletContents)
   })
   // Claim article authorship
   let btnClaimArticle = document.querySelector('#btn-claim-article')
@@ -628,8 +648,9 @@ function updateGfwState(updates) {
 function gfwGotSignedInUser(state) {
   let currentState = updateGfwState(state)
   let nextContents = initHighlightForAuthor(currentState);
-  currentContents = !nextContents ? startingContents : nextContents;
-  insertContent();
+  currentContents = !nextContents ? submitWalletContents : nextContents; // submitWContents needs to be different if they've submitted
+  showCogMenu()
+  transitionWidget(currentContents)
 }
 
 function gfwGotSignedOutUser() {
@@ -638,24 +659,26 @@ function gfwGotSignedOutUser() {
     coralUserId: null
   }
   sessionUUID = uuidv4()
+  currentContents = startingContents
+  transitionWidget(currentContents)
   updateGfwState(state)
   postMessage({
     contents: { 'event_name': 'CANCEL_HIGHLIGHT_COMMENTS' }
   })
-  closeWidget()
+  minimizeWidget()
   hideCogMenu()
 }
 
-function checkForLoggedInUser() {
+function initDisplayWidget() {
 
   let gotState = localStorage.getItem('gfwState');
   if (gotState) {
     let state = JSON.parse(gotState)
     if (state.loggedIn) {
       gfwGotSignedInUser(state)
-      document.querySelector('#gfw-menu').removeAttribute('hidden')
     }
   }
+  insertContent();
 }
 function initHighlightForAuthor(currentState) {
   let customMessage;
@@ -922,7 +945,7 @@ async function startRevShare() {
 
 window.addEventListener('load', () => {
   getHighlightedComment()
-  checkForLoggedInUser()
+  initDisplayWidget()
   if (document.monetization) { // only run if user has a paying wallet
     startRevShare()
   }
@@ -1052,3 +1075,34 @@ window.addEventListener('message', (event) => {
   }
 
 })
+
+
+if ("IntersectionObserver" in window) {
+
+  const lazyOptions = {
+    root: null,
+    threshold: 0
+  }
+
+  const observer = new window.IntersectionObserver(([entry]) => {
+    console.log(entry.boundingClientRect.top)
+    if (entry.isIntersecting) {
+      showWidget()
+      panelSeen = true;
+      return
+    }
+    if (entry.boundingClientRect.top > 0) {
+      if (panelSeen) {
+        minimizeWidget()
+      } else {
+        hideWidget()
+      }
+
+    } else {
+      showWidget()
+    }
+
+  }, lazyOptions)
+
+  observer.observe(document.querySelector('.comment-section .section-heading'))
+}
