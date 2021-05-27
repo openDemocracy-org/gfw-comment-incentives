@@ -78,7 +78,25 @@ function addHighlightEvents(triggeringEvent) {
       if (!gotButton) {
         let buttonElement = document.createElement('button')
         buttonElement.classList.add('gfw-button')
-        buttonElement.innerHTML = 'Highlight comment'
+        const styles = {
+          cursor: 'pointer',
+          background: '#0162B7',
+          color: '#fff',
+          padding: '.66667rem 2.66667rem',
+          textTransform: 'uppercase',
+          fontWeight: '600',
+          letterSpacing: '2px',
+          cursor: 'pointer',
+          border: 'none',
+          position: 'relative',
+          zIndex: '1000',
+          left: '1.5rem',
+          fontFamily: "'Open Sans',sans-serif"
+        };
+
+        Object.assign(buttonElement.style, styles);
+
+        buttonElement.innerHTML = 'Highlight'
         comment.insertAdjacentElement('afterend', buttonElement)
         buttonElement.addEventListener('click', function () {
           triggeringEvent.source.postMessage({
@@ -111,4 +129,4 @@ function addHighlightEvents(triggeringEvent) {
     })
   }, 1000)
   highlightIntervals.push(highlightInterval)
-} 
+}

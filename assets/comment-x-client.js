@@ -53,6 +53,9 @@ const styles = () => {
       display: none;
     }
 
+    .gfw-title {
+      margin-top: 0.75rem;
+    }
     .minimized-contents button {
       cursor: pointer;
     }
@@ -77,13 +80,18 @@ const styles = () => {
         position: fixed;
         right: 1rem;
         bottom: 3rem;
-        z-index: 3;
+        z-index: 2;
       }
+      section.gfw-comments,
       .gfw-comments { 
+        padding: 1.5rem 0;
         width: 500px;
         margin-bottom: 0rem;
         border-radius: 10px;
         box-shadow: 0px 0px 0px -4px rgba(39,55,74,.25), 0 15px 40px 10px rgba(39,55,74,.25);
+    }
+    .gfw-comments {
+      width: auto;
     }
     }
 
@@ -117,7 +125,7 @@ const styles = () => {
       cursor: pointer;
       display: inline-block;
       margin-right: 0.5rem; 
-      letter-spacing: 1px;
+      letter-spacing: 2px;
       font-size: .93333rem;
       text-transform: uppercase;
       font-weight: 700;
@@ -167,7 +175,7 @@ const styles = () => {
 
     .top-bar {
       position: absolute;
-      top: 0;
+      top: 0.5rem;
       right: 0.5rem;
     }
 
@@ -323,8 +331,7 @@ let promptLoginContents = {
 let submitWalletContents = {
   title: widgetTitle,
   para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Read the instructions »</a><br/><br/> Please enter your wallet address below:<br/>
-<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>
-`,
+<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>`,
   hidden: false,
   buttons: [],
   topButtons: [minimizeButton],
@@ -499,9 +506,9 @@ const menuTemplate = () => {
 const template = (content) => {
   return `
 <div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget" class="main-button btn btn-primary">${content.title}</button></div>  
-<section id="gfw-comments" class="donation-cta-contentbottom gfw-comments" ${content.hidden ? 'hidden="hidden"' : ''}>
+<section id="gfw-comments" class="gfw-comments" ${content.hidden ? 'hidden="hidden"' : ''}>
     <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
-    <h1 class="sidebar__heading mailing-list__sub-title">${content.title}</h1>
+    <h1 class="gfw-title">${content.title}</h1>
     <p class="explainer-box">${content.para}</p>
     ${content.buttons.map((button) => `<button class="main-button btn btn-primary" id="${button.id}">${button.label}</button>`).join('')}
     </section>
