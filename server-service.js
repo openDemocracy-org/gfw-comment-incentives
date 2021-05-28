@@ -5,6 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const helmet = require('helmet')
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 const MongoClient = require('mongodb').MongoClient;
 
@@ -26,6 +27,24 @@ app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.raw({ type: "application/json" }))
 app.use(express.static('public'))
+
+/**
+ * Format API error response for printing in console.
+ */
+
+function formatError(error) {
+    const responseStatus = `${error.response.status} (${error.response.statusText})`;
+
+    console.log(
+        `Request failed with HTTP status code ${responseStatus}`,
+        JSON.stringify({
+            url: error.config.url,
+            response: error.response.data
+        }, null, 2)
+    );
+
+    throw error;
+}
 
 
 // create reusable transporter object using the default SMTP transport
@@ -93,46 +112,39 @@ app.get('/data/wallets/*', async function (req, res) {
         if (docsHighlightedByAuthor.length > 0) { // Got at least one highlighted comment, let's get commenter ID
 
             let firstHighlightedComment = docsHighlightedByAuthor[0]
+            
             let commentId = firstHighlightedComment.comment_id.split('comment-')[1]
-            const coralDb = mongoClient.db('coral')
-            const coralCursor = await coralDb.collection('comments').find({ id: commentId })
-            let coralDocs = [];
-            while (await coralCursor.hasNext()) {
-                const doc = await coralCursor.next()
-                coralDocs.push(doc)
-            }
-            if (coralDocs.length > 0) {
-                let highlightedComment = coralDocs[0]
-                commenterCoralId = highlightedComment.authorID;
-            }
+            
+            commenterCoralId = await getCommentAuthorIdFromCommentId(commentId);
+            
         }
-        getWallets(res, authorCoralId, commenterCoralId)
+        let response = await getWallets(authorCoralId, commenterCoralId)
+        res.send(response)
     } catch (e) {
         console.log(e)
         res.send(e)
     }
 
-    async function getWallets(res, authorId, commenterId) {
-
-        let commenterWalletDoc = null;
-        let authorWalletDoc = await getFirstDocById(serviceDb, 'wallets', authorId)
-        if (commenterId)
-            commenterWalletDoc = await getFirstDocById(serviceDb, 'wallets', commenterId)
-
-        let gotWallet = authorWalletDoc ? true : commenterWalletDoc ? true : false;
-
-        let response = {
-            gotWallet
-        }
-        if (authorWalletDoc)
-            response.authorWallet = authorWalletDoc.wallet
-        if (commenterWalletDoc)
-            response.commenterWallet = commenterWalletDoc.wallet
-
-        res.send(response)
-    }
 
 })
+
+
+async function getCommentAuthorIdFromCommentId(commentId) {
+
+    const coralDb = mongoClient.db('coral')
+    const coralCursor = await coralDb.collection('comments').find({ id: commentId })
+    let coralDocs = [];
+    while (await coralCursor.hasNext()) {
+        const doc = await coralCursor.next()
+        coralDocs.push(doc)
+    }
+    if (coralDocs.length > 0) {
+        let highlightedComment = coralDocs[0]
+        return highlightedComment.authorID;
+    } else {
+        return null;
+    }
+}
 
 
 app.get('/data/authors/*', async function (req, res) {
@@ -147,8 +159,27 @@ app.get('/data/chosen/*', async function (req, res) {
     res.json(docs)
 })
 
+async function getWallets(authorId, commenterId) {
+    const serviceDb = mongoClient.db('gfw-service')
+    let commenterWalletDoc = null;
+    let authorWalletDoc = await getFirstDocById(serviceDb, 'wallets', authorId)
+    if (commenterId)
+        commenterWalletDoc = await getFirstDocById(serviceDb, 'wallets', commenterId)
+    let gotWallet = authorWalletDoc ? true : commenterWalletDoc ? true : false;
+    let response = {
+        gotWallet
+    }
+    if (authorWalletDoc)
+        response.authorWallet = authorWalletDoc.wallet
+    if (commenterWalletDoc)
+        response.commenterWallet = commenterWalletDoc.wallet
+ 
+    return response;
+}
+
 
 async function handleHighlightedComment(comment, sentDetails) {
+
     const highlightedComment = {
         author_id: comment.author.id,
         ...sentDetails
@@ -161,6 +192,79 @@ async function handleHighlightedComment(comment, sentDetails) {
         author_id: comment.author.id
     };
     addToDbReplaceAll(fileName, highlightedComment, replace);
+    let commentId = sentDetails.comment_id.split('comment-')[1]
+    let commenterId = await getCommentAuthorIdFromCommentId(commentId)
+    ensureWalletForCommenter(commenterId)
+}
+
+async function ensureWalletForCommenter(commenterId) {
+    try {
+        let requestUserCreateWallet = false;
+        let wallets = await getWallets(commenterId);
+        if (!wallets.gotWallet) {
+            requestUserCreateWallet = true;
+            // Create uphold wallet
+            let card = await createUpholdCard(commenterId)
+            let pointer = await createUpholdPointer(card.id)
+            let wallet = pointer.id.split('$')[1].split('.').join('-') // Remove dollar and replace '.' with '-' to appease MongoDB
+            handleNewWallet(commenterId, wallet, false)
+        }
+        sendHighlightedCommentNotification(requestUserCreateWallet);
+    } catch (error) {
+        formatError(error)
+    }
+}
+
+
+function sendHighlightedCommentNotification(requestUserCreateWallet) {
+    // TODO
+    console.log('Sending email confirming comment highlighted.')
+    if (requestUserCreateWallet) {
+        console.log('And requesting user adds their own wallet.')
+    } else {
+        console.log('User has submitted their own wallet.')
+    }
+}
+
+async function createUpholdCard(commenterId = null) {
+    try {
+        const response = await axios.request({
+            method: "POST",
+            url: `${process.env.UPHOLD_API_ENDPOINT}/v0/me/cards/`,
+            data: {
+                label: `comment-x-${commenterId}`,
+                currency: 'GBP'
+            },
+            headers: {
+                Authorization: `Bearer ${process.env.UPHOLD_ACCESS_TOKEN}`,
+                "content-type": "application/json",
+            },
+        });
+
+        return response.data;
+    } catch (error) {
+        formatError(error);
+    }
+}
+
+async function createUpholdPointer(sourceCardID = null) {
+    try {
+        const response = await axios.request({
+            method: "POST",
+            url: `${process.env.UPHOLD_API_ENDPOINT}/v0/me/cards/${sourceCardID}/addresses`,
+            data: {
+                network: "interledger"
+            },
+            headers: {
+                Authorization: `Bearer ${process.env.UPHOLD_ACCESS_TOKEN}`,
+                "content-type": "application/json",
+            },
+        });
+
+        return response.data;
+    } catch (error) {
+        formatError(error);
+    }
 }
 
 
@@ -203,16 +307,16 @@ async function handleAuthorCandidate(comment, sentDetails) {
     }
 }
 
-function handleNewWallet(comment, sentDetails) {
+function handleNewWallet(coralUserId, walletIdentifier, isUserSubmitted) {
     let toStore = {
-        [sentDetails.wallet]: comment.author.id,
-        _id: comment.author.id,
-        wallet: sentDetails.wallet
+        [walletIdentifier]: coralUserId,
+        _id: coralUserId,
+        wallet: walletIdentifier,
+        isUserSubmitted
     }
     let toReplace = {
-        _id: comment.author.id,
+        _id: coralUserId,
     }
-    console.log(toStore, toReplace)
     addToDbReplaceAll('wallets', toStore, toReplace)
 }
 
@@ -227,7 +331,6 @@ function getSlugFromUrl(urlString) {
 }
 
 app.post("/handle-comment", (req, res) => {
-
     try {
         let body = req.body.comment.body
         let b1 = body.slice(5)
@@ -248,7 +351,7 @@ app.post("/handle-comment", (req, res) => {
             handleHighlightedComment(req.body, sentJson)
             res.json({ status: 'REJECTED' });
         } else if (sentJson.event_name === 'NEW_WALLET') {
-            handleNewWallet(req.body, sentJson)
+            handleNewWallet(req.body.author.id, sentJson.wallet, true)
             res.json({ status: 'REJECTED' });
         } else if (sentJson.event_name === 'AUTHOR_CANDIDATE') {
             handleAuthorCandidate(req.body, sentJson)

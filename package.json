@@ -17,6 +17,7 @@
   "author": "Ali Blackwell",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "connect": "^3.7.0",
     "connect-slashes": "^1.4.0",

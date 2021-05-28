@@ -536,7 +536,9 @@ function insertContent() { // Runs once at the beginning
 
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers(currentContents)
-  document.querySelector('#gfw-menu').removeAttribute('hidden')
+  let menu = document.querySelector('#gfw-menu');
+  if (menu)
+    menu.removeAttribute('hidden')
 }
 
 function showCogMenu() {
@@ -891,33 +893,45 @@ async function startRevShare() {
           return
         }
         let pointers;
-        if (data.authorWallet && data.commenterWallet) {
+
+        let authorWallet = reformatMongoWallet(data.authorWallet)
+        let commenterWallet = reformatMongoWallet(data.commenterWallet)
+
+        if (authorWallet && commenterWallet) {
           pointers = {
             [`${odWalletAddress}`]: 45,
-            [`${data.authorWallet}`]: 45,
-            [`${data.commenterWallet}`]: 10
+            [`${authorWallet}`]: 45,
+            [`${commenterWallet}`]: 10
           }
           console.log('GFW Got wallets for author and commenter, 45 45 10.')
 
-        } else if (data.authorWallet) {
+        } else if (authorWallet) {
           pointers = {
             [`${odWalletAddress}`]: 50,
-            [`${data.authorWallet}`]: 50
+            [`${authorWallet}`]: 50
           }
           console.log('GFW Got wallet for author, 50 50.')
-        } else if (data.commenterWallet) {
+        } else if (commenterWallet) {
           pointers = {
             [`${odWalletAddress}`]: 90,
-            [`${data.commenterWallet}`]: 10
+            [`${commenterWallet}`]: 10
           }
           console.log('GFW Got wallet for commenter, 90 10.')
         }
-        console.log(pointers)
         performCalculations(pointers)
       }
     } catch (e) {
       console.log(e)
     }
+  }
+
+  function reformatMongoWallet(pointer) {
+    if (pointer) {
+      return `$${pointer.split('-').join('.')}`
+    } else {
+      return null
+    }
+
   }
 
 
@@ -1021,10 +1035,6 @@ function checkHighlightedComment(comment, commentFromIframe) {
   if (!comment) {
     customMessage = 'No comment found, please check and try again.';
   } else {
-    console.log('comment from server:')
-    console.log(comment)
-    console.log('comment from iframe:')
-    console.log(commentFromIframe)
     if (comment.author_id === authorCommentId && commentFromIframe.comment_id === comment.comment_id) {
       // they are the author and it's a valid comment
       customMessage = 'Successfully highlighted comment';
@@ -1092,7 +1102,6 @@ if ("IntersectionObserver" in window) {
   }
 
   const observer = new window.IntersectionObserver(([entry]) => {
-    console.log(entry.boundingClientRect.top)
     if (entry.isIntersecting) {
       showWidget()
       panelSeen = true;

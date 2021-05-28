@@ -98,3 +98,10 @@ Within your Coral Talk instance you need to create an External Moderation phase,
 
 This project was designed to explore how sharing micropayments in different proportions creates different incentives for users. The code that sets these proportions for article authors, comment authors and the publisher (i.e. the incentive levers) can be found in `comment-x-client.js` inside `function startRevShare()`.
 
+### Uphold API
+
+We are using the [Client Credentials Flow](https://uphold.com/en/developer/api/documentation/#client-credentials-flow)
+
+Run the below manually to generate an access token, and then add this access token to .env as UPHOLD_ACCESS_TOKEN.
+
+`curl https://api-sandbox.uphold.com/oauth2/token -X POST -H "Content-Type: application/x-www-form-urlencoded" -u 'clientID:clientSecret' -d 'grant_type=client_credentials'`
