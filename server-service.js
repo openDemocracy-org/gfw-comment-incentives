@@ -159,6 +159,20 @@ app.get('/data/chosen/*', async function (req, res) {
     res.json(docs)
 })
 
+async function getUser(userId) {
+    const coralDb = mongoClient.db('coral')
+    const coralCursor = await coralDb.collection('users').find({ id: userId })
+    let coralDocs = [];
+    while (await coralCursor.hasNext()) {
+        const doc = await coralCursor.next()
+        coralDocs.push(doc)
+    }
+    if (coralDocs.length > 0) {
+        return coralDocs[0]
+    }
+    return null;
+}
+
 async function getWallets(authorId, commenterId) {
     const serviceDb = mongoClient.db('gfw-service')
     let commenterWalletDoc = null;
@@ -209,17 +223,21 @@ async function ensureWalletForCommenter(commenterId) {
             let wallet = pointer.id.split('$')[1].split('.').join('-') // Remove dollar and replace '.' with '-' to appease MongoDB
             handleNewWallet(commenterId, wallet, false)
         }
-        sendHighlightedCommentNotification(requestUserCreateWallet);
+        let user = await getUser(commenterId)
+        if (user) {
+            sendHighlightedCommentNotification(user.email, requestUserCreateWallet);
+        }
+        
     } catch (error) {
         formatError(error)
     }
 }
 
 
-function sendHighlightedCommentNotification(requestUserCreateWallet) {
-    console.log('Sending email confirming comment highlighted.')
+function sendHighlightedCommentNotification(userEmail, requestUserCreateWallet) {
+    console.log('Sending email confirming comment highlighted.')    
     const email = {
-        to: 'aliblackwell@protonmail.com',
+        to: userEmail,
         subject: 'Your comment has been highlighted!',
         salutation: 'Hello,',
         paragraphs: [
@@ -282,6 +300,7 @@ async function createUpholdPointer(sourceCardID = null) {
 }
 
 
+
 async function handleAuthorCandidate(comment, sentDetails) {
     let storyUrl = getStoryUrlFromComment(comment)
     let storySlug = getSlugFromUrl(storyUrl)
@@ -291,15 +310,8 @@ async function handleAuthorCandidate(comment, sentDetails) {
     let fileName = `${storySlug}-authors`;
     addToDb(fileName, toStore);
 
-    const coralDb = mongoClient.db('coral')
-    const coralCursor = await coralDb.collection('users').find({ id: comment.author.id })
-    let coralDocs = [];
-    while (await coralCursor.hasNext()) {
-        const doc = await coralCursor.next()
-        coralDocs.push(doc)
-    }
-    if (coralDocs.length > 0) {
-        let claimingAuthor = coralDocs[0];
+    const claimingAuthor = await getUser(comment.author.id)
+    if (claimingAuthor) {
         let claimingAuthorEmail = claimingAuthor.email;
         let claimingAuthorUsername = claimingAuthor.username;
         const subjectString = `New authorship claim: ${claimingAuthorUsername}`;
