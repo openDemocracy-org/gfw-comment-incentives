@@ -750,6 +750,7 @@ function getCoralWindow(comment) {
 
 function postMessage(comment) {
   let coralWindow = getCoralWindow(comment)
+  comment.url = window.location.href
   if (coralWindow) {
     coralWindow.postMessage(comment, '{{coralRootUrl}}')
   }

@@ -1,6 +1,7 @@
 const AllowedServerEvents = ['AUTHOR_CANDIDATE', 'NEW_WALLET', 'HIGHLIGHT_COMMENT']
 const AllowedDomEvents = ['INIT_HIGHLIGHT_COMMENTS', 'CANCEL_HIGHLIGHT_COMMENTS', 'PING']
 let highlightIntervals = [];
+let parentPageUrl;
 
 let coralRecentlyLoaded = true;
 setTimeout(function () {
@@ -19,7 +20,15 @@ function eventFire(el, etype) {
 
 window.addEventListener('message', (event) => {
 
+
+  if (event.data.url) {
+    parentPageUrl = event.data.url
+  }
+
+
   if (event.data.contents) {
+    
+   
     let eventName = event.data.contents.event_name
     if (AllowedDomEvents.includes(eventName) && eventName === 'PING') {
       if (coralRecentlyLoaded) {
@@ -30,7 +39,7 @@ window.addEventListener('message', (event) => {
 
     if (AllowedServerEvents.includes(eventName)) {
       let comment = event.data.contents
-      submitComment(comment)
+      submitComment(comment, event.data.url)
       return;
     }
     if (AllowedDomEvents.includes(eventName) && eventName === 'INIT_HIGHLIGHT_COMMENTS') {
@@ -45,8 +54,22 @@ window.addEventListener('message', (event) => {
 
 }, false);
 
-function submitComment(comment) {
+function submitComment(comment, pageUrl) {
   let commentWindow = document.querySelector('#comments-postCommentForm-field')
+  // Can't put the URL in as it gets formatted 
+  // into an HTML hyperlink by Coral which breaks 
+  // the JSON; split it on the first dot of the domain
+  let allButProtocol = pageUrl.split('://')[1]
+  let splitUrl = allButProtocol.split('.')
+ 
+  if (!splitUrl[1]) {
+    splitUrl = allButProtocol.split(':') // is localhost
+  }
+   
+  comment.pageUrl = {
+    beforeDot: (splitUrl[0] === 'localhost') ? 'local' : splitUrl[0],
+    afterDot: splitUrl[1].split('?')[0] // Remove query params
+  }
   if (commentWindow) {
     commentWindow.innerHTML = `<div>${JSON.stringify(comment)}<br></div>`
     let form = document.querySelector('#comments-postCommentForm-form')
@@ -119,8 +142,13 @@ function addHighlightEvents(triggeringEvent) {
               'event_name': 'START_HIGHLIGHT_COMMENT',
               'comment': commentWithMeta
             }, triggeringEvent.origin);
-
-            submitComment(commentWithMeta)
+            if (parentPageUrl) {
+              submitComment(commentWithMeta, parentPageUrl)
+            } else {
+              alert('Encountered error, page will reload - please try again.')
+              window.location.reload()
+            }
+            
           }, 100)
         })
         comment.setAttribute('gotButton', true)

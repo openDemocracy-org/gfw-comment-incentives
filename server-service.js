@@ -208,10 +208,10 @@ async function handleHighlightedComment(comment, sentDetails) {
     addToDbReplaceAll(fileName, highlightedComment, replace);
     let commentId = sentDetails.comment_id.split('comment-')[1]
     let commenterId = await getCommentAuthorIdFromCommentId(commentId)
-    ensureWalletForCommenter(commenterId)
+    ensureWalletForCommenter(commenterId, sentDetails)
 }
 
-async function ensureWalletForCommenter(commenterId) {
+async function ensureWalletForCommenter(commenterId, sentJson) {
     try {
         let requestUserCreateWallet = false;
         let wallets = await getWallets(commenterId);
@@ -225,34 +225,32 @@ async function ensureWalletForCommenter(commenterId) {
         }
         let user = await getUser(commenterId)
         if (user) {
-            sendHighlightedCommentNotification(user.email, requestUserCreateWallet);
+            let articleUrl = getArticleUrlFromSentJson(sentJson)
+            sendHighlightedCommentNotification(user.email, requestUserCreateWallet, articleUrl);
         }
-        
+
     } catch (error) {
         formatError(error)
     }
 }
 
 
-function sendHighlightedCommentNotification(userEmail, requestUserCreateWallet) {
-    console.log('Sending email confirming comment highlighted.')    
+function sendHighlightedCommentNotification(userEmail, requestUserCreateWallet, articleUrl) {
     const email = {
         to: userEmail,
         subject: 'Your comment has been highlighted!',
         salutation: 'Hello,',
         paragraphs: [
-            `Congratulations, your comment has been highlighted on ARTICLE PAGE.`,
+            `Congratulations, your comment <a href="${articleUrl}#highlighted-comment">has been highlighted</a>.`,
             `Thank you so much for joining our experiment :)`
         ],
         signoff1: 'All the best,',
         signoff2: 'OpenDemocracy'
     }
     if (requestUserCreateWallet) {
-        console.log('And requesting user adds their own wallet.')
         email.paragraphs.push(`We have created a temporary wallet for you, and this wallet is currently being paid 10% of the page's revenue.`)
-        email.paragraphs.push(`To add your own wallet, please xxx`)
+        email.paragraphs.push(`To add your own wallet, please <a href="${articleUrl}">visit the page</a> and follow the instructions in the Comment widget.`)
     } else {
-        console.log('User has submitted their own wallet.')
         email.paragraphs.push(`The wallet you submitted is currently being paid 10% of the page's revenue.`)
     }
     sendEmail(email)
@@ -299,6 +297,14 @@ async function createUpholdPointer(sourceCardID = null) {
     }
 }
 
+function getArticleUrlFromSentJson(sentJson) {
+    if (sentJson.pageUrl.beforeDot === 'local') {
+        return `http://${sentJson.pageUrl.beforeDot}host:${sentJson.pageUrl.afterDot}`
+    } else {
+        return `https://${sentJson.pageUrl.beforeDot}.${sentJson.pageUrl.afterDot}`
+    }
+}
+
 
 
 async function handleAuthorCandidate(comment, sentDetails) {
@@ -315,14 +321,17 @@ async function handleAuthorCandidate(comment, sentDetails) {
         let claimingAuthorEmail = claimingAuthor.email;
         let claimingAuthorUsername = claimingAuthor.username;
         const subjectString = `New authorship claim: ${claimingAuthorUsername}`;
+        const articleUrl = getArticleUrlFromSentJson(sentDetails)
         const email = {
             subject: subjectString,
             salutation: 'Hey,',
             paragraphs: [
-                `There has been an authorship claim: ${claimingAuthorEmail}:`,
-                `${comment.author.id}`,
-                `If this person is the author of ARTICLE you can add their ID to their Wagtail profile, enabling them to highlight comments.`,
-                `Please let them know when you have done this. Thank you.`
+                `There has been an authorship claim:`,
+                `${claimingAuthorEmail} has asserted their authorship of the following article: <a href="${articleUrl}">${articleUrl}</a>`,
+                `If this is correct please add the following ID to their Wagtail profile, enabling them to highlight comments:`,
+                `<b>${comment.author.id}</b>`,
+                `Please let them know when you have done this. Thank you.`,
+                `(If you are testing things, visiting <a href="${articleUrl}?caid=${comment.author.id}">this URL</a> logged in as the above user will enable you to highlight comments.)`                
             ],
             signoff1: 'Love,',
             signoff2: 'CommentX x x'
@@ -376,6 +385,7 @@ function getSlugFromUrl(urlString) {
 }
 
 app.post("/handle-comment", (req, res) => {
+
     try {
         let body = req.body.comment.body
         let b1 = body.slice(5)
