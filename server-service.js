@@ -112,11 +112,11 @@ app.get('/data/wallets/*', async function (req, res) {
         if (docsHighlightedByAuthor.length > 0) { // Got at least one highlighted comment, let's get commenter ID
 
             let firstHighlightedComment = docsHighlightedByAuthor[0]
-            
+
             let commentId = firstHighlightedComment.comment_id.split('comment-')[1]
-            
+
             commenterCoralId = await getCommentAuthorIdFromCommentId(commentId);
-            
+
         }
         let response = await getWallets(authorCoralId, commenterCoralId)
         res.send(response)
@@ -173,7 +173,7 @@ async function getWallets(authorId, commenterId) {
         response.authorWallet = authorWalletDoc.wallet
     if (commenterWalletDoc)
         response.commenterWallet = commenterWalletDoc.wallet
- 
+
     return response;
 }
 
@@ -217,13 +217,27 @@ async function ensureWalletForCommenter(commenterId) {
 
 
 function sendHighlightedCommentNotification(requestUserCreateWallet) {
-    // TODO
     console.log('Sending email confirming comment highlighted.')
+    const email = {
+        to: 'aliblackwell@protonmail.com',
+        subject: 'Your comment has been highlighted!',
+        salutation: 'Hello,',
+        paragraphs: [
+            `Congratulations, your comment has been highlighted on ARTICLE PAGE.`,
+            `Thank you so much for joining our experiment :)`
+        ],
+        signoff1: 'All the best,',
+        signoff2: 'OpenDemocracy'
+    }
     if (requestUserCreateWallet) {
         console.log('And requesting user adds their own wallet.')
+        email.paragraphs.push(`We have created a temporary wallet for you, and this wallet is currently being paid 10% of the page's revenue.`)
+        email.paragraphs.push(`To add your own wallet, please xxx`)
     } else {
         console.log('User has submitted their own wallet.')
+        email.paragraphs.push(`The wallet you submitted is currently being paid 10% of the page's revenue.`)
     }
+    sendEmail(email)
 }
 
 async function createUpholdCard(commenterId = null) {
@@ -289,22 +303,41 @@ async function handleAuthorCandidate(comment, sentDetails) {
         let claimingAuthorEmail = claimingAuthor.email;
         let claimingAuthorUsername = claimingAuthor.username;
         const subjectString = `New authorship claim: ${claimingAuthorUsername}`;
-        const emailString = `There has been an authorship claim: ${claimingAuthorEmail}: ${comment.author.id}. Please delete this email once you have either discarded it or added the CoralTalk ID to the author's Wagtail profile.`
-        const mailData = {
-            from: process.env.OD_FROM_GMAIL,  // sender address
-            to: process.env.OD_EDITOR_EMAIL,   // list of receivers
+        const email = {
             subject: subjectString,
-            text: emailString,
-            html: `<b>Hey there! </b>
-                <br> ${emailString} <br/>`,
-        };
-        transporter.sendMail(mailData, function (err, info) {
-            if (err)
-                console.log(err)
-            else
-                console.log(info);
-        });
+            salutation: 'Hey,',
+            paragraphs: [
+                `There has been an authorship claim: ${claimingAuthorEmail}:`,
+                `${comment.author.id}`,
+                `If this person is the author of ARTICLE you can add their ID to their Wagtail profile, enabling them to highlight comments.`,
+                `Please let them know when you have done this. Thank you.`
+            ],
+            signoff1: 'Love,',
+            signoff2: 'CommentX x x'
+        }
+        sendEmail(email);
     }
+}
+
+function sendEmail(email) {
+
+    const messageString = email.paragraphs.join('\n')
+
+    const mailData = {
+        from: process.env.OD_FROM_GMAIL,  // sender address
+        to: email.to ? email.to : process.env.OD_EDITOR_EMAIL,   // list of receivers
+        subject: email.subject,
+        text: `${email.salutation}\n${messageString}\n${email.signoff1}\n${email.signoff2}`,
+        html: `<p>${email.salutation}</p>
+            ${email.paragraphs.map(email => `<p>${email}</p>`).join('')}
+            <p> ${email.signoff1} </p><p>${email.signoff2}</p>`,
+    };
+    transporter.sendMail(mailData, function (err, info) {
+        if (err)
+            console.log(err)
+        else
+            console.log(info);
+    });
 }
 
 function handleNewWallet(coralUserId, walletIdentifier, isUserSubmitted) {
