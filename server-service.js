@@ -301,7 +301,7 @@ function getArticleUrlFromSentJson(sentJson) {
     if (sentJson.pageUrl.beforeDot === 'local') {
         return `http://${sentJson.pageUrl.beforeDot}host:${sentJson.pageUrl.afterDot}`
     } else {
-        return `https://${sentJson.pageUrl.beforeDot}.${sentJson.pageUrl.afterDot}`
+        return `https://${sentJson.pageUrl.beforeDot}.com${sentJson.pageUrl.afterDot}`
     }
 }
 

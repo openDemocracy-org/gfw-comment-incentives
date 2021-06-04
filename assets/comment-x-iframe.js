@@ -60,7 +60,7 @@ function submitComment(comment, pageUrl) {
   // into an HTML hyperlink by Coral which breaks 
   // the JSON; split it on the first dot of the domain
   let allButProtocol = pageUrl.split('://')[1]
-  let splitUrl = allButProtocol.split('.')
+  let splitUrl = allButProtocol.split('.com')
  
   if (!splitUrl[1]) {
     splitUrl = allButProtocol.split(':') // is localhost
