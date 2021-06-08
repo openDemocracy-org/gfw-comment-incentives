@@ -100,7 +100,6 @@ app.get('/data/wallets/*', async function (req, res) {
 
     try {
         const slug = req.originalUrl.split('/data/wallets/')[1].split('.json')[0]
-
         authorCoralId = req.query.author;
         const cursor = await serviceDb.collection(`${slug}-chosen`).find({ author_id: authorCoralId })
 

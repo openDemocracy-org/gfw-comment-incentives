@@ -330,7 +330,7 @@ let promptLoginContents = {
 
 let submitWalletContents = {
   title: widgetTitle,
-  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Read the instructions »</a><br/><br/> Please enter your wallet address below:<br/>
+  para: `If a comment of yours is highlighted, you will receive 10% of this page's revenue. We will create a holding wallet for you, but to receive the payments directly:<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Setup a wallet »</a><br/><br/> Please enter your wallet address below:<br/>
 <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>`,
   hidden: false,
   buttons: [],
@@ -735,7 +735,6 @@ function getCoralWindow(comment) {
     }
   }
   catch (error) {
-    console.error(error)
     let errorContents = {
       title: widgetTitle,
       para: `We have encountered an error connecting to Coral. The event that ran too soon was ${comment.contents.event_name}. Please make a note of this and report it to Matt or Ali. Thank you. You can dismiss this window and continue if Coral is appearing correctly below.`,
