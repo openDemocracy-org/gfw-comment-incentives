@@ -105,3 +105,55 @@ We are using the [Client Credentials Flow](https://uphold.com/en/developer/api/d
 Run the below manually to generate an access token, and then add this access token to .env as UPHOLD_ACCESS_TOKEN.
 
 `curl https://api-sandbox.uphold.com/oauth2/token -X POST -H "Content-Type: application/x-www-form-urlencoded" -u 'clientID:clientSecret' -d 'grant_type=client_credentials'`
+
+## Updating, building and deploying Coral Talk
+
+### Updating
+
+Clone our forked version of Coral Talk.
+
+Use branch `main` for `production` and `od-staging-main` for `staging`.
+
+Ensure the URL inside the script tag in `src/core/server/app/views/templates/base.html` is `https://comment-x.comment.opendemocracy.net/assets/iframe.js` for production or `https://comment-x-service.staging-caprover.opendemocracy.net/assets/iframe.js` for staging.
+
+Commit your changes.
+
+Add the Coral Talk parent repository as a git remote:
+
+`$ git remote add coral-origin git@github.com:coralproject/talk.git`
+
+Fetch all branches: `$ git fetch`
+
+Merge in the latest changes from their production branch:
+
+`$ git merge coral-origin/main`
+
+Push these changes up to our repo:
+
+`$ git push origin [main / od-staging-main]`
+
+### Building
+
+Make sure Docker is running on your computer.
+
+Ensure you are logged into the Docker CLI as a user who can access the Docker opendemocracy account and its [coral-talk repository](https://hub.docker.com/repository/docker/opendemocracy/coral-talk).
+
+`$ docker login`
+
+Build the image with the following command, using production or staging as the tag:
+
+`$ docker build -t opendemocracy/coral-talk:[tag] .`
+
+This can take some time...
+
+Push the image up to Docker Hub:
+
+`$ docker push opendemocracy/coral-talk:[tag]`
+
+### Deploying
+
+Go to CapRover server admin area. Go to the Coral Talk app (production or staging) and click through to Deployments. Scroll down to Method 6: Deploy via ImageName.
+
+Paste the image name in e.g. `opendemocracy/coral-talk:production` and click Deploy Now.
+
+After a moment or two the updated Coral Talk code will be deployed.
