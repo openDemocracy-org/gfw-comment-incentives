@@ -8,11 +8,11 @@ The live, production version is working at https://opendemocracy.net/newmoney
 
 You can interact with the prototype by visiting:
 
-https://comment-x-fake-site.staging-caprover.opendemocracy.net/articles/some-article/
+https://comment-fake-site.comment.opendemocracy.net/articles/hello-github/
 
-Where 'some-article' is a URL slug for an imaginary article on openDemocracy. Changing the slug will generate a new article.
+Where 'hello-github' is a URL slug for an imaginary article on openDemocracy. Changing the slug will generate a new article.
 
-The article's author can highlight comments in Coral if their Coral user ID is included in the article page template as e.g. `<meta name="author_comment_id" content="89a0e9a2-32b1-468a-a101-7005b4cf62e3" />`. This is done through the CMS and can be mocked in this imaginary article by adding the Coral user id as a URL parameter to the above URL `?caid=89a0e9a2-32b1-468a-a101-7005b4cf62e3`. Coral user IDs can be found in the Coral admin dashboard.
+The article's author can highlight comments in Coral if their Coral user ID is included in the article page template as e.g. `<meta name="author_comment_id" content="89a0e9a2-32b1-468a-a101-7005b4cf62e3" />`. In production this is done through the CMS but can be mocked in this imaginary article by adding the Coral user id as a URL parameter to the above URL `?caid=89a0e9a2-32b1-468a-a101-7005b4cf62e3`. Coral user IDs can be found in the Coral admin dashboard.
 
 ## Communication from Coral Talk instance
 
@@ -24,9 +24,9 @@ The service reads these comments and looks for identifiers sent in the comment b
 
 ## Client-side JavaScript
 
-Finally, this project provides a client side script for the page to embed which displays an interactive widget that guides commenters and page authors through their user journeys.
+The project provides two client side scripts: one for the article page which produces an interactive widget that guides commenters and page authors through their user journeys; the second is for the Coral Talk comments iframe and it listens for postMessages from the client script, and sends them up to the server via the moderation phase detailed above.
 
-This file is stored in `./assets/comment-x-client.js` and is served via the Nunjucks templating.
+These files live in [./assets]`(./assets`) and are served by Express using Nunjucks templating.
 
 ## Running locally
 
@@ -96,7 +96,7 @@ Within your Coral Talk instance you need to create an External Moderation phase,
 
 ## Incentives configuration
 
-This project was designed to explore how sharing micropayments in different proportions creates different incentives for users. The code that sets these proportions for article authors, comment authors and the publisher (i.e. the incentive levers) can be found in `comment-x-client.js` inside `function startRevShare()`.
+This project was designed to explore how sharing micropayments in different proportions creates different incentives for users. The code that sets these proportions for article authors, comment authors and the publisher (i.e. the incentive levers) can be found in `./comment-x-client.js` inside `function startRevShare()`.
 
 ### Uphold API
 
