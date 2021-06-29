@@ -20,7 +20,6 @@ function eventFire(el, etype) {
 
 window.addEventListener('message', (event) => {
 
-
   if (event.data.url) {
     parentPageUrl = event.data.url
   }
@@ -131,9 +130,10 @@ function addHighlightEvents(triggeringEvent) {
             let comment_id = comment.getAttribute('id')
             let commentHTML = comment.querySelector('.coral-comment-content').innerHTML
             let text = commentHTML.replace(/"/g, "'")
+            let textWithoutBr = text.replaceAll('<br>', '')
             let commentWithMeta = {
               'event_name': 'HIGHLIGHT_COMMENT',
-              'commenter_comment': text,
+              'commenter_comment': textWithoutBr,
               'timestamp': timestamp,
               'commenter_name': commenter_name,
               'comment_id': comment_id

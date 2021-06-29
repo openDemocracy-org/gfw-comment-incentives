@@ -668,7 +668,7 @@ function gfwGotSignedOutUser() {
     coralUserId: null
   }
   sessionUUID = uuidv4()
-  currentContents = startingContents
+  currentContents = startingMonetizationContents
   transitionWidget(currentContents)
   updateGfwState(state)
   postMessage({
@@ -751,6 +751,7 @@ function getCoralWindow(comment) {
 function postMessage(comment) {
   let coralWindow = getCoralWindow(comment)
   comment.url = window.location.href
+  console.log('posting', comment)
   if (coralWindow) {
     coralWindow.postMessage(comment, '{{coralRootUrl}}')
   }
@@ -905,6 +906,7 @@ async function startRevShare() {
             [`${commenterWallet}`]: 10
           }
           console.log('GFW Got wallets for author and commenter, 45 45 10.')
+          console.log(`od: ${odWalletAddress}, author: ${authorWallet}, commenter: ${commenterWallet}`)
 
         } else if (authorWallet) {
           pointers = {
@@ -912,12 +914,14 @@ async function startRevShare() {
             [`${authorWallet}`]: 50
           }
           console.log('GFW Got wallet for author, 50 50.')
+          console.log(`od: ${odWalletAddress}, author: ${authorWallet}`)
         } else if (commenterWallet) {
           pointers = {
             [`${odWalletAddress}`]: 90,
             [`${commenterWallet}`]: 10
           }
           console.log('GFW Got wallet for commenter, 90 10.')
+          console.log(`od: ${odWalletAddress}, commenter: ${commenterWallet}`)
         }
         performCalculations(pointers)
       }
