@@ -184,12 +184,12 @@ async function getWallets(authorId, commenterId) {
     }
     if (authorWalletDoc)
         response.authorWallet = authorWalletDoc.wallet
-    if (commenterWalletDoc)
+    if (commenterWalletDoc) {
         response.commenterWallet = commenterWalletDoc.wallet
-
+        response.commenterWalletUserSubmitted = commenterWalletDoc.isUserSubmitted
+    }
     return response;
 }
-
 
 async function handleHighlightedComment(comment, sentDetails) {
 
