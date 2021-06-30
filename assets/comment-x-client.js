@@ -330,8 +330,8 @@ let promptLoginContents = {
 
 let submitWalletContents = {
   title: widgetTitle,
-  para: `If a comment of yours is highlighted, you will receive 10% of this page's revenue. We will create a holding wallet for you, but to receive the payments directly:<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Setup a wallet »</a><br/><br/> Please enter your wallet address below:<br/>
-<form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>`,
+  para: `If you've set up a digital wallet, we can share micropayments whenever one of your comments is highlighted by an article author.<br/> <a href="/rewardcomments" target="_blank" class="learn-more-text">Read the instructions »</a><br/><br/> Please enter your wallet address below:<br/>
+  <form id="wallet" class="mailing-list__form" ><input type="text" name="wallet" /><button id="submit-wallet" class="btn btn-primary">Submit wallet</button></form><span class="gfw-notice"></span>`,
   hidden: false,
   buttons: [],
   topButtons: [minimizeButton],
