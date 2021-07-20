@@ -266,7 +266,7 @@ function sendAuthorTemporaryWalletNotification(
       `Thank you so much for joining our experiment :)`,
     ],
     signoff1: "All the best,",
-    signoff2: "OpenDemocracy",
+    signoff2: "openDemocracy",
   }
   if (requestUserCreateWallet) {
     email.paragraphs.push(
@@ -297,7 +297,7 @@ function sendHighlightedCommentNotification(
       `Thank you so much for joining our experiment :)`,
     ],
     signoff1: "All the best,",
-    signoff2: "OpenDemocracy",
+    signoff2: "openDemocracy",
   }
   if (requestUserCreateWallet) {
     email.paragraphs.push(
