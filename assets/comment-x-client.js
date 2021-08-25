@@ -79,7 +79,7 @@ const styles = () => {
       #gfw-widget {
         position: fixed;
         right: 1rem;
-        bottom: 3rem;
+        bottom: 5.5rem;
         z-index: 2;
       }
       section.gfw-comments,
