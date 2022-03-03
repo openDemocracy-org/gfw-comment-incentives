@@ -290,11 +290,12 @@ function sendHighlightedCommentNotification(
 ) {
   const email = {
     to: userEmail,
-    subject: "Your comment has been highlighted!",
-    salutation: "Hello,",
+    subject: "openDemocracy highlighted your comment",
+    salutation: "Dear reader,",
     paragraphs: [
-      `Congratulations, your comment <a href="${articleUrl}#highlighted-comment">has been highlighted</a>.`,
-      `Thank you so much for joining our experiment :)`,
+      `Congratulations, your comment on <a href="${articleUrl}#highlighted-comment">an openDemocracy article was highlighted</a>.`,
+      `You are now eligible to receive a <a href="https://opendemocracy.net/commentx">share of micropayments through our CommentX program</a>.`,
+      `Comments are being rewarded in this way, with real money, in an experiment to encourage debate. Please reply to this email with any queries.`,
     ],
     signoff1: "All the best,",
     signoff2: "openDemocracy",
