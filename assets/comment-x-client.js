@@ -1,36 +1,39 @@
 // Global variables
-const gfwCommentsActive = true;
-let panelSeen = false;
-let gfwPanelVisible = false;
-let gfwStlyesInserted = false;
+const gfwCommentsActive = true
+let panelSeen = false
+let gfwPanelVisible = false
+let gfwStlyesInserted = false
 let menuRoot = document.getElementById('gfw-menu-container')
-let contentRoot = document.getElementById('gfw-widget'); // DOM node to hold widget
+let contentRoot = document.getElementById('gfw-widget') // DOM node to hold widget
 const widgetTitle = 'Better comments online'
 
 // What mode are we in?
 
 // Check for approved author
-let authorCommentMeta = document.querySelector('[name="author_comment_id"]');
-let authorCommentId = false;
+let authorCommentMeta = document.querySelector('[name="author_comment_id"]')
+let authorCommentId = false
 if (authorCommentMeta) {
-  authorCommentId = authorCommentMeta.getAttribute('content') != 'None' ? authorCommentMeta.getAttribute('content') : false;
+  authorCommentId =
+    authorCommentMeta.getAttribute('content') != 'None'
+      ? authorCommentMeta.getAttribute('content')
+      : false
 }
 
 let gotMonetizationTag = document.querySelector('meta[name=monetization]')
-let wallet;
-let gfwMenuButton;
+let wallet
+let gfwMenuButton
 const body = document.querySelector('body')
 const coralReadyActions = []
 let pollListeners = []
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+    var r = (Math.random() * 16) | 0,
+      v = c == 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
 }
 
-let sessionUUID = uuidv4()
 const slug = getSlugFromUrl(window.location.pathname)
 
 // Styles for page injection
@@ -194,6 +197,7 @@ const styles = () => {
       position: relative;
       min-height: 723px;
     }
+
     #loading {
       position: absolute;
       width: 102%;
@@ -242,7 +246,7 @@ function insertStyles() {
   let node = document.createElement('style')
   let styleEl = document.querySelector('head').appendChild(node)
   styleEl.innerHTML = styles()
-  gfwStlyesInserted = true;
+  gfwStlyesInserted = true
 }
 
 // Generic components and actions
@@ -253,10 +257,10 @@ const resetButton = {
   events: null,
   go: function () {
     updateGfwState({
-      userType: undefined
+      userType: undefined,
     })
     transitionWidget(startingContents)
-  }
+  },
 }
 
 const closeButton = {
@@ -265,7 +269,7 @@ const closeButton = {
   events: null,
   go: function () {
     closeWidget()
-  }
+  },
 }
 
 const minimizeButton = {
@@ -274,18 +278,18 @@ const minimizeButton = {
   events: null,
   go: function () {
     minimizeWidget()
-  }
+  },
 }
 
 function minimizeWidget() {
-  contentRoot.classList.add('minimized');
-  document.querySelector('.minimized-contents').setAttribute('aria-hidden', 'false');
+  contentRoot.classList.add('minimized')
+  document.querySelector('.minimized-contents').setAttribute('aria-hidden', 'false')
   document.querySelector('#maximize-widget').addEventListener('click', maximizeWidget)
 }
 
 function hideWidget() {
-  document.querySelector('#gfw-widget').setAttribute('aria-hidden', 'true');
-  contentRoot.classList.add('hidden');
+  document.querySelector('#gfw-widget').setAttribute('aria-hidden', 'true')
+  contentRoot.classList.add('hidden')
 }
 
 function maximizeWidget() {
@@ -295,8 +299,8 @@ function maximizeWidget() {
 }
 
 function showWidget() {
-  document.querySelector('#gfw-widget').setAttribute('aria-hidden', 'false');
-  contentRoot.classList.remove('hidden');
+  document.querySelector('#gfw-widget').setAttribute('aria-hidden', 'false')
+  contentRoot.classList.remove('hidden')
 }
 
 function closeWidget() {
@@ -308,16 +312,18 @@ let startingMonetizationContents = {
   title: `Better comments online?`,
   para: `Want to support authors and commenters on openDemocracy? Try our reward system and help us build a better web. <a href='/rewardcomments' target='_blank' class="learn-more-text">Learn more »</a>`,
   topButtons: [minimizeButton],
-  buttons: [{
-    label: "Count me in",
-    id: 'proceed-button',
-    events: null,
-    go: function () {
-      let state = getState();
-      let toContents = state.loggedIn ? submitWalletContents : promptLoginContents;
-      transitionWidget(toContents)
-    }
-  }]
+  buttons: [
+    {
+      label: 'Count me in',
+      id: 'proceed-button',
+      events: null,
+      go: function () {
+        let state = getState()
+        let toContents = state.loggedIn ? submitWalletContents : promptLoginContents
+        transitionWidget(toContents)
+      },
+    },
+  ],
 }
 
 let promptLoginContents = {
@@ -340,46 +346,63 @@ let submitWalletContents = {
     let walletSubmitForm = document.querySelector('form#wallet')
     let walletNotice = document.querySelector('.gfw-notice')
     let walletInput = document.querySelector('input[name=wallet]')
-    walletInput && walletInput.addEventListener('keydown', function (evt) {
-      walletNotice.innerHTML = ''
-    })
-    walletSubmitForm && walletSubmitForm.addEventListener('submit', function (evt) {
-      evt.preventDefault()
-      wallet = input.value
-      if (wallet === '') {
-        walletNotice.innerHTML = 'Please enter a wallet'
-        return
-      }
-
-      if (wallet[0] != '$') {
-        walletNotice.innerHTML = 'Please ensure your wallet is in the correct format'
-        return
-      } else {
-        wallet = wallet.slice(1)
-        if (wallet.length === 27) { // Uphold wallet length
-          wallet = wallet.split('.').join('-')
-        } else {
-          walletNotice.innerHTML = 'Please ensure you enter the correct number of characters'
+    walletInput &&
+      walletInput.addEventListener('keydown', function (evt) {
+        walletNotice.innerHTML = ''
+      })
+    walletSubmitForm &&
+      walletSubmitForm.addEventListener('submit', function (evt) {
+        evt.preventDefault()
+        wallet = input.value
+        if (wallet === '') {
+          walletNotice.innerHTML = 'Please enter a wallet'
           return
         }
-      }
 
-      let walletLookup = [{
-        key: 'wallet',
-        value: wallet
-      }]
+        if (wallet[0] != '$') {
+          walletNotice.innerHTML = 'Please ensure your wallet is in the correct format'
+          return
+        } else {
+          wallet = wallet.slice(1)
+          if (wallet.length === 27) {
+            // Uphold wallet length
+            wallet = wallet.split('.').join('-')
+          } else {
+            walletNotice.innerHTML = 'Please ensure you enter the correct number of characters'
+            return
+          }
+        }
 
-      const pollCheckInterval = setInterval(() => pollForSavedContent('/data/all-wallets.json', walletLookup, 'objEq', () => {
-        transitionWidget(commenterFlowHandleWalletSuccess);
-        clearAllPolls()
-      }, function (error) {
-        handleLookupError("We can't find your wallet on the server. Please make sure you are logged in as a normal user i.e. not a Coral moderator, editor, or admin and try again.", error)
-      }), 1000);
-      pollListeners.push(pollCheckInterval)
-      commenterFlowSubmitWallet()
+        let walletLookup = [
+          {
+            key: 'wallet',
+            value: wallet,
+          },
+        ]
 
-    })
-  }
+        const pollCheckInterval = setInterval(
+          () =>
+            pollForSavedContent(
+              '/data/all-wallets.json',
+              walletLookup,
+              'objEq',
+              () => {
+                transitionWidget(commenterFlowHandleWalletSuccess)
+                clearAllPolls()
+              },
+              function (error) {
+                handleLookupError(
+                  "We can't find your wallet on the server. Please make sure you are logged in as a normal user i.e. not a Coral moderator, editor, or admin and try again.",
+                  error
+                )
+              }
+            ),
+          1000
+        )
+        pollListeners.push(pollCheckInterval)
+        commenterFlowSubmitWallet()
+      })
+  },
 }
 
 let startingStandardContents = {
@@ -388,14 +411,15 @@ let startingStandardContents = {
   hidden: true,
   buttons: [],
   topButtons: [],
-  events: null
+  events: null,
 }
 
-
-let state = getState();
-let monetizationContents = state.walletSubmitted ? startingStandardContents : startingMonetizationContents
-let startingContents = gotMonetizationTag ? monetizationContents : startingStandardContents;
-let currentContents = startingContents; // Global content state
+let state = getState()
+let monetizationContents = state.walletSubmitted
+  ? startingStandardContents
+  : startingMonetizationContents
+let startingContents = gotMonetizationTag ? monetizationContents : startingStandardContents
+let currentContents = startingContents // Global content state
 
 const commenterFlowSubmitWallet = () => {
   let newContents = {
@@ -405,10 +429,10 @@ const commenterFlowSubmitWallet = () => {
     hidden: false,
     events: null,
     buttons: [],
-    topButtons: [minimizeButton]
+    topButtons: [minimizeButton],
   }
   let message = {
-    contents: { 'event_name': 'NEW_WALLET', 'wallet': `${wallet}`, }
+    contents: { event_name: 'NEW_WALLET', wallet: `${wallet}` },
   }
   postMessage(message)
   transitionWidget(newContents)
@@ -416,26 +440,24 @@ const commenterFlowSubmitWallet = () => {
 }
 
 function clearAllPolls() {
-
-  pollListeners.map(interval => clearInterval(interval))
+  pollListeners.map((interval) => clearInterval(interval))
   pollListeners = []
-
 }
 
 async function pollForSavedContent(path, desiredData, dataFormat, success, error) {
-
   try {
-    let response = await fetch(`{{externalServiceRootUrl}}${path}`);
-    if (response.ok) { // if HTTP-status is 200-299
+    let response = await fetch(`{{externalServiceRootUrl}}${path}`)
+    if (response.ok) {
+      // if HTTP-status is 200-299
       // get the response body (the method explained below)
-      let data = await response.json();
-      const foundItem = data.map(comment => {
+      let data = await response.json()
+      const foundItem = data.map((comment) => {
         if (dataFormat === 'objEq') {
           if (comment[desiredData[0].key] === desiredData[0].value) {
             if (desiredData.length > 1) {
               if (comment[desiredData[1].key] === desiredData[1].value) {
                 success(comment)
-                return true;
+                return true
               } else {
                 return false
               }
@@ -449,14 +471,15 @@ async function pollForSavedContent(path, desiredData, dataFormat, success, error
       //console.log(foundItem) TODO: check if map returns anything and return error if not
 
       if (dataFormat === 'objKeyExist') {
-        let results = data.filter(record => record[desiredData])
+        let results = data.filter((record) => record[desiredData])
         if (results.length > 0) {
           success(results)
         } else {
-          throw new Error('no object key')
+          let errStr = `record not found yet - no object with key ${desiredData}`
+          console.error(errStr)
+          throw new Error(errStr)
         }
       }
-
     }
   } catch (e) {
     error(e)
@@ -471,7 +494,7 @@ const handleLookupError = (message, error) => {
     para: message,
     hidden: false,
     buttons: [],
-    topButtons: [closeButton]
+    topButtons: [closeButton],
   }
   transitionWidget(errorContents)
   console.error(error)
@@ -485,11 +508,11 @@ const commenterFlowHandleWalletSuccess = {
   hidden: false,
   events: () => {
     updateGfwState({
-      walletSubmitted: true
+      walletSubmitted: true,
     })
   },
   buttons: [closeButton],
-  topButtons: [minimizeButton]
+  topButtons: [minimizeButton],
 }
 
 const menuTemplate = () => {
@@ -505,46 +528,52 @@ const menuTemplate = () => {
 
 const template = (content) => {
   return `
-<div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget" class="main-button btn btn-primary">${content.title}</button></div>  
+<div class="minimized-contents gfw-comments aria-hidden="true"><button id="maximize-widget" class="main-button btn btn-primary">${
+    content.title
+  }</button></div>  
 <section id="gfw-comments" class="gfw-comments" ${content.hidden ? 'hidden="hidden"' : ''}>
-    <div class="top-bar">${content.topButtons.map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`).join('')}</div>
+    <div class="top-bar">${content.topButtons
+      .map((button) => `<button class="top-button" id="${button.id}">${button.label}</button>`)
+      .join('')}</div>
     <h1 class="gfw-title">${content.title}</h1>
     <p class="explainer-box">${content.para}</p>
-    ${content.buttons.map((button) => `<button class="main-button btn btn-primary" id="${button.id}">${button.label}</button>`).join('')}
+    ${content.buttons
+      .map(
+        (button) =>
+          `<button class="main-button btn btn-primary" id="${button.id}">${button.label}</button>`
+      )
+      .join('')}
     </section>
     `
 }
 
 function toggleMenu() {
-
   let expanded = gfwMenuButton.getAttribute('aria-expanded')
   let menu = document.querySelector('#gfw-menu + [role="menu"]')
   if (expanded === 'false') {
     gfwMenuButton.setAttribute('aria-expanded', 'true')
-    menu.hidden = false;
+    menu.hidden = false
     menu.querySelector(':not([disabled])').focus()
   } else {
     gfwMenuButton.setAttribute('aria-expanded', 'false')
-    menu.hidden = true;
+    menu.hidden = true
   }
-
 }
 
-function insertContent() { // Runs once at the beginning
+function insertContent() {
+  // Runs once at the beginning
   !gfwStlyesInserted && insertStyles()
-  gfwPanelVisible = true;
+  gfwPanelVisible = true
 
   contentRoot.innerHTML = template(currentContents)
   updateEventHandlers(currentContents)
-  let menu = document.querySelector('#gfw-menu');
-  if (menu)
-    menu.removeAttribute('hidden')
+  let menu = document.querySelector('#gfw-menu')
+  if (menu) menu.removeAttribute('hidden')
 }
 
 function showCogMenu() {
   menuRoot.innerHTML = menuTemplate()
-  gfwMenuButton = document.querySelector('button#gfw-menu');
-
+  gfwMenuButton = document.querySelector('button#gfw-menu')
 
   gfwMenuButton.addEventListener('click', toggleMenu)
   gfwMenuButton.addEventListener('keydown', function (evt) {
@@ -556,55 +585,69 @@ function showCogMenu() {
   // Add wallet
   let btnAddWallet = document.querySelector('#btn-add-wallet')
   btnAddWallet.addEventListener('click', () => {
-    toggleMenu(); // Hide the button
+    toggleMenu() // Hide the button
     transitionWidget(submitWalletContents)
   })
   // Claim article authorship
   let btnClaimArticle = document.querySelector('#btn-claim-article')
   let state = getState()
-  let loadingString = 'Claiming article authorship';
-  if (state.authorshipClaimed) {
+  let loadingString = 'Claiming article authorship'
+  if (state.claims && state.claims.includes(slug)) {
     btnClaimArticle.innerText = 'Enable comment highlighting'
     loadingString = 'Enabling comment highlighting'
   }
-  btnClaimArticle.addEventListener('click', () => handleAuthorshipClaim(loadingString))
+  btnClaimArticle.addEventListener('click', () =>
+    handleAuthorshipClaim(loadingString, state.sessionUUID)
+  )
 }
 
 function hideCogMenu() {
   menuRoot.innerHTML = ''
 }
 
-
-function handleAuthorshipClaim(loadingString) {
-  toggleMenu(); // Hide the button
+function handleAuthorshipClaim(loadingString, sessionUUIDFromState) {
+  toggleMenu() // Hide the button
   postMessage({
-    contents: { 'event_name': 'AUTHOR_CANDIDATE', 'uuid': sessionUUID }
+    contents: { event_name: 'AUTHOR_CANDIDATE', uuid: sessionUUIDFromState },
   })
-  showLoadingAnimation(loadingString);
-  const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/authors/${slug}.json`, sessionUUID, 'objKeyExist', (data) => {
+  showLoadingAnimation(loadingString)
+  const pollCheckInterval = setInterval(
+    () =>
+      pollForSavedContent(
+        `/data/authors/${slug}.json`,
+        sessionUUIDFromState,
+        'objKeyExist',
+        (data) => {
+          clearAllPolls()
+          const uid = data[0][sessionUUIDFromState] // pluck their coralId
+          const claim = {
+            coralUserId: uid,
+            slug: slug,
+          }
+          const currentState = updateGfwState({
+            claims: [claim],
+          })
 
-    clearAllPolls()
-    const uid = data[0][sessionUUID] // pluck their coralId
-    const currentState = updateGfwState({
-      coralUserId: uid,
-      authorshipClaimed: true
-    })
-
-    let nextContents = initHighlightForAuthor(currentState);
-    transitionWidget(nextContents);
-
-  }, function (error) {
-    handleLookupError(`There has been an error retrieving your CoralID. Please refresh the page and try again, making sure you are not logged in as a Coral editor, moderator or admin.`, error)
-  }), 1000);
+          let nextContents = initHighlightForAuthor(currentState)
+          transitionWidget(nextContents)
+        },
+        function (error) {
+          handleLookupError(
+            `There has been an error retrieving your CoralID. Please refresh the page and try again, making sure you are not logged in as a Coral editor, moderator or admin.`,
+            error
+          )
+        }
+      ),
+    1000
+  )
   pollListeners.push(pollCheckInterval)
 }
 
-
 function transitionWidget(someContents) {
-  let clonedContents = Object.assign({}, currentContents);
+  let clonedContents = Object.assign({}, currentContents)
   let newContents = {
     ...clonedContents,
-    ...someContents
+    ...someContents,
   }
   currentContents = newContents
   contentRoot.innerHTML = template(currentContents)
@@ -613,51 +656,63 @@ function transitionWidget(someContents) {
 }
 
 function updateEventHandlers(currentContents) {
-  currentContents.buttons.forEach(buttonMeta => {
+  currentContents.buttons.forEach((buttonMeta) => {
     let button = document.querySelector(`#${buttonMeta.id}`)
     button.addEventListener('click', buttonMeta.go)
   })
-  currentContents.topButtons.forEach(buttonMeta => {
+  currentContents.topButtons.forEach((buttonMeta) => {
     let button = document.querySelector(`#${buttonMeta.id}`)
     button.addEventListener('click', buttonMeta.go)
   })
   if (currentContents.events) {
     currentContents.events()
   }
-
 }
 
 // State handlers
 
 function getState() {
-  let lsState = localStorage.getItem('gfwState');
-  let state;
+  let lsState = localStorage.getItem('gfwState')
+  let state
   if (lsState) {
     state = JSON.parse(lsState)
+    if (!state.sessionUUID) {
+      state.sessionUUID = uuidv4()
+    }
   } else {
-    state = {}
+    state = { sessionUUID: uuidv4() }
   }
-  return state;
+  return state
 }
 
 function updateGfwState(updates) {
-  let gotOldState = localStorage.getItem('gfwState');
-  let newState = updates;
-  if (gotOldState) {
-    let oldState = JSON.parse(gotOldState);
+  let oldState = getState()
+  let newState = updates
+
+  let existingClaims = oldState.claims
+  console.log(existingClaims)
+  let newClaims = newState.claims
+  console.log(newClaims)
+  if (existingClaims && newClaims) {
+    let mergedClaims = [...existingClaims, ...newClaims]
+
+    newState.claims = mergedClaims
+  }
+
+  if (oldState) {
     newState = {
       ...oldState,
-      ...updates
+      ...updates,
     }
   }
   localStorage.setItem('gfwState', JSON.stringify(newState))
-  return newState;
+  return newState
 }
 
 function gfwGotSignedInUser(state) {
   let currentState = updateGfwState(state)
-  let nextContents = initHighlightForAuthor(currentState);
-  currentContents = !nextContents ? submitWalletContents : nextContents; // submitWContents needs to be different if they've submitted
+  let nextContents = initHighlightForAuthor(currentState)
+  currentContents = !nextContents ? submitWalletContents : nextContents // submitWContents needs to be different if they've submitted
   showCogMenu()
   transitionWidget(currentContents)
 }
@@ -665,67 +720,84 @@ function gfwGotSignedInUser(state) {
 function gfwGotSignedOutUser() {
   const state = {
     loggedIn: false,
-    coralUserId: null
   }
-  sessionUUID = uuidv4()
   currentContents = startingMonetizationContents
   transitionWidget(currentContents)
   updateGfwState(state)
   postMessage({
-    contents: { 'event_name': 'CANCEL_HIGHLIGHT_COMMENTS' }
+    contents: { event_name: 'CANCEL_HIGHLIGHT_COMMENTS' },
   })
   minimizeWidget()
   hideCogMenu()
 }
 
 function initDisplayWidget() {
-
-  let gotState = localStorage.getItem('gfwState');
-  if (gotState) {
-    let state = JSON.parse(gotState)
+  let state = getState()
+  if (state) {
     if (state.loggedIn) {
       gfwGotSignedInUser(state)
     }
   }
-  insertContent();
+  insertContent()
 }
+
+function isMakingActiveClaim(currentState) {
+  // do multiple claims merge nicely
+  // what happens if logout
+  const claims = currentState.claims
+  let gotMatchingClaim = false
+  if (claims && claims.length > 0) {
+    const matchingClaim = claims.filter((claim) => claim.slug === slug)[0]
+    gotMatchingClaim = matchingClaim ? matchingClaim.coralUserId : false
+  }
+  return gotMatchingClaim
+}
+
 function initHighlightForAuthor(currentState) {
-  let customMessage;
-  if (authorCommentId && currentState.coralUserId && authorCommentId === currentState.coralUserId) {
+  let customMessage
+  let activeClaimUserId = isMakingActiveClaim(currentState)
+
+  if (authorCommentId && activeClaimUserId === authorCommentId) {
     // they are the author
-    customMessage = 'Your Coral account has been verified as the author of this article. You can now use the highlight comment buttons in the comment thread to pick a highlighted comment';
+    customMessage =
+      'Your Coral account has been verified as the author of this article. You can now use the highlight comment buttons in the comment thread to pick a highlighted comment'
     coralReadyActions.push(function () {
       let message = {
-        contents: { 'event_name': 'INIT_HIGHLIGHT_COMMENTS' }
+        contents: { event_name: 'INIT_HIGHLIGHT_COMMENTS' },
       }
       postMessage(message)
     })
     handleCoralReady()
-  } else if (authorCommentId && currentState.coralUserId && authorCommentId !== currentState.coralUserId) {
-    customMessage = 'We have verified another account as the author of this article. Please check and try again.'
-  } else if (!authorCommentId && currentState.coralUserId) {
-    customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor. You will receive an email letting you know when you can come back and highlight comments.</a>
-      `
-  } else if (currentState.coralUserId === null && currentState.authorshipClaimed) {
-    customMessage = 'Please use the button under the cog to enable highlighting, you have logged out and in again.'
+  } else if (authorCommentId && authorCommentId !== activeClaimUserId) {
+    customMessage =
+      'We have verified another account as the author of this article. Please check and try again.'
+  } else if (!authorCommentId && activeClaimUserId) {
+    customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor. You will receive an email letting you know when you can come back and highlight comments.</a>  `
+    // } else if (
+    //   currentState.coralUserId === null &&
+    //   currentState.authorshipClaimed
+    // ) {
+    //   customMessage =
+    //     "Please use the button under the cog to enable highlighting, you have logged out and in again."
   } else {
     return false
   }
-  return newContents = {
+
+  return (newContents = {
     title: widgetTitle,
     para: customMessage,
     hidden: false,
     buttons: [],
-    topButtons: [closeButton]
-  }
+    topButtons: [closeButton],
+  })
 }
 
 function getCoralWindow(comment) {
   try {
     if (comment.contents) {
       if (comment.contents.event_name) {
-        var iframe = document.querySelector('#coral_thread_iframe');
-        var coralWindow = iframe.contentWindow;
+        var iframe = document.querySelector('#coral_thread_iframe')
+        var coralWindow = iframe.contentWindow
         return coralWindow
       } else {
         return false
@@ -733,24 +805,22 @@ function getCoralWindow(comment) {
     } else {
       return false
     }
-  }
-  catch (error) {
+  } catch (error) {
     let errorContents = {
       title: widgetTitle,
       para: `We have encountered an error connecting to Coral. The event that ran too soon was ${comment.contents.event_name}. Please make a note of this and report it to Matt or Ali. Thank you. You can dismiss this window and continue if Coral is appearing correctly below.`,
       hidden: false,
       topButtons: [closeButton],
-      buttons: []
+      buttons: [],
     }
     transitionWidget(errorContents)
-    return false;
+    return false
   }
 }
 
 function postMessage(comment) {
   let coralWindow = getCoralWindow(comment)
   comment.url = window.location.href
-  console.log('posting', comment)
   if (coralWindow) {
     coralWindow.postMessage(comment, '{{coralRootUrl}}')
   }
@@ -763,7 +833,6 @@ function getSlugFromUrl(urlString) {
 }
 
 // Get highlighted comment
-
 
 const highlightedCommentTemplate = (content) => {
   return `
@@ -785,7 +854,6 @@ const highlightedCommentTemplate = (content) => {
   </div>
   `
 }
-
 
 const highlightedParliaProposalTemplate = (content) => {
   return `
@@ -812,43 +880,38 @@ const highlightedParliaProposalTemplate = (content) => {
   `
 }
 
-
-
 async function getHighlightedComment() {
   if (authorCommentId) {
     try {
-      let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`);
+      let response = await fetch(`{{externalServiceRootUrl}}/data/chosen/${slug}.json`)
 
       if (response.ok) {
-        let data = await response.json();
+        let data = await response.json()
         if (data.length > 0) {
-          let chosenComment = data.filter(comment => comment.author_id === authorCommentId)
+          let chosenComment = data.filter((comment) => comment.author_id === authorCommentId)
           data = chosenComment[0]
           if (data.author_id === authorCommentId) {
-            let highlightedCommentBox = document.querySelector('#highlighted-comment');
+            let highlightedCommentBox = document.querySelector('#highlighted-comment')
             try {
-              if (data.commenter_comment.includes("https://www.parlia.com/c/")) {
+              if (data.commenter_comment.includes('https://www.parlia.com/c/')) {
                 var parliaUrlFirst = data.commenter_comment.split('"')[1]
                 var parliaUrl = parliaUrlFirst.split('"')[0]
-                data.parliaUrl = parliaUrl;
+                data.parliaUrl = parliaUrl
                 highlightedCommentBox.innerHTML = highlightedParliaProposalTemplate(data)
-                var ref = document.getElementsByTagName('script')[0];
-                var script = document.createElement('script');
-                script.src = "{{parliaUrl}}";
-                ref.parentNode.insertBefore(script, ref);
+                var ref = document.getElementsByTagName('script')[0]
+                var script = document.createElement('script')
+                script.src = '{{parliaUrl}}'
+                ref.parentNode.insertBefore(script, ref)
               } else {
-                throw ('Not Parlia')
+                throw 'Not Parlia'
               }
             } catch (e) {
               highlightedCommentBox.innerHTML = highlightedCommentTemplate(data)
             }
-
-
           }
         }
       }
-    }
-    catch (error) {
+    } catch (error) {
       console.log(error)
     }
   }
@@ -858,26 +921,23 @@ function handleCoralReady() {
   coralReadyActions.forEach((action) => action())
 }
 
-
-
 function clientHandleCoralEvent(events) {
-
   events.onAny(function (eventName, data) {
     if (eventName === 'ready') {
       handleCoralReady()
     }
     if (eventName === 'signedIn' && gfwCommentsActive) {
       gfwGotSignedInUser({
-        loggedIn: true
-      });
+        loggedIn: true,
+      })
     }
     if (eventName === 'signOut.success') {
-      gfwGotSignedOutUser();
+      gfwGotSignedOutUser()
     }
     if (eventName === 'createComment.success') {
       //my_event_tracker.send('createComment', data);
     }
-  });
+  })
 }
 
 async function startRevShare() {
@@ -886,14 +946,16 @@ async function startRevShare() {
     let odWalletAddress = monetizationTag.getAttribute('content')
     let authorId = document.querySelector('meta[name=author_comment_id]').getAttribute('content')
     try {
-      let response = await fetch(`{{externalServiceRootUrl}}/data/wallets/${slug}.json?author=${authorId}`);
+      let response = await fetch(
+        `{{externalServiceRootUrl}}/data/wallets/${slug}.json?author=${authorId}`
+      )
       if (response.ok) {
-        let data = await response.json();
+        let data = await response.json()
         if (!data.gotWallet) {
           console.log('GFW Got no wallets, defaulting to 100% oD revenue.')
           return
         }
-        let pointers;
+        let pointers
 
         let authorWallet = reformatMongoWallet(data.authorWallet)
         let commenterWallet = reformatMongoWallet(data.commenterWallet)
@@ -902,22 +964,23 @@ async function startRevShare() {
           pointers = {
             [`${odWalletAddress}`]: 45,
             [`${authorWallet}`]: 45,
-            [`${commenterWallet}`]: 10
+            [`${commenterWallet}`]: 10,
           }
           console.log('GFW Got wallets for author and commenter, 45 45 10.')
-          console.log(`od: ${odWalletAddress}, author: ${authorWallet}, commenter: ${commenterWallet}`)
-
+          console.log(
+            `od: ${odWalletAddress}, author: ${authorWallet}, commenter: ${commenterWallet}`
+          )
         } else if (authorWallet) {
           pointers = {
             [`${odWalletAddress}`]: 50,
-            [`${authorWallet}`]: 50
+            [`${authorWallet}`]: 50,
           }
           console.log('GFW Got wallet for author, 50 50.')
           console.log(`od: ${odWalletAddress}, author: ${authorWallet}`)
         } else if (commenterWallet) {
           pointers = {
             [`${odWalletAddress}`]: 90,
-            [`${commenterWallet}`]: 10
+            [`${commenterWallet}`]: 10,
           }
           console.log('GFW Got wallet for commenter, 90 10.')
           console.log(`od: ${odWalletAddress}, commenter: ${commenterWallet}`)
@@ -935,12 +998,9 @@ async function startRevShare() {
     } else {
       return null
     }
-
   }
 
-
   function performCalculations(pointers) {
-
     function pickPointer() {
       const sum = Object.values(pointers).reduce((sum, weight) => sum + weight, 0)
       let choice = Math.random() * sum
@@ -971,7 +1031,8 @@ async function startRevShare() {
 window.addEventListener('load', () => {
   getHighlightedComment()
   initDisplayWidget()
-  if (document.monetization) { // only run if user has a paying wallet
+  if (document.monetization) {
+    // only run if user has a paying wallet
     startRevShare()
   }
 })
@@ -982,7 +1043,7 @@ function showLoadingAnimation(customMessage, cb) {
     para: customMessage,
     hidden: false,
     buttons: [],
-    topButtons: [minimizeButton]
+    topButtons: [minimizeButton],
   }
   transitionWidget(contents)
   let loading = document.querySelector('#loading')
@@ -992,17 +1053,16 @@ function showLoadingAnimation(customMessage, cb) {
   }
   let ping = setInterval(() => {
     let message = {
-      contents: { 'event_name': 'PING', }
+      contents: { event_name: 'PING' },
     }
     let coralWindow = getCoralWindow(message)
     if (coralWindow) {
       coralWindow.postMessage(message, '{{coralRootUrl}}')
     }
-  }, 50);
+  }, 50)
 
   const listenForResponse = (event) => {
-    if (event.origin !== '{{coralRootUrl}}')
-      return;
+    if (event.origin !== '{{coralRootUrl}}') return
     if (event.data === 'PONG') {
       if (cb) {
         cb()
@@ -1016,35 +1076,35 @@ function showLoadingAnimation(customMessage, cb) {
       clearInterval(ping)
     }
   }
-  window.addEventListener('message', listenForResponse);
+  window.addEventListener('message', listenForResponse)
 }
 
-
 function checkHighlightedComment(comment, commentFromIframe) {
-
-
   const scrollButton = {
     label: 'View highlighted comment',
     id: 'scroll-button',
     events: null,
     go: function () {
       document.getElementById('highlighted-comment').scrollIntoView({
-        behavior: 'smooth'
-      });
-    }
+        behavior: 'smooth',
+      })
+    },
   }
 
-  let customMessage;
-  let gotScrollButton = false;
+  let customMessage
+  let gotScrollButton = false
   if (!comment) {
-    customMessage = 'No comment found, please check and try again.';
+    customMessage = 'No comment found, please check and try again.'
   } else {
-    if (comment.author_id === authorCommentId && commentFromIframe.comment_id === comment.comment_id) {
+    if (
+      comment.author_id === authorCommentId &&
+      commentFromIframe.comment_id === comment.comment_id
+    ) {
       // they are the author and it's a valid comment
-      customMessage = 'Successfully highlighted comment';
-      gotScrollButton = true;
+      customMessage = 'Successfully highlighted comment'
+      gotScrollButton = true
     } else {
-      customMessage = 'Error highlighting comment :(';
+      customMessage = 'Error highlighting comment :('
     }
   }
   let newContents = {
@@ -1052,17 +1112,16 @@ function checkHighlightedComment(comment, commentFromIframe) {
     para: customMessage,
     hidden: false,
     buttons: [],
-    topButtons: [minimizeButton]
+    topButtons: [minimizeButton],
   }
 
   gotScrollButton && newContents.buttons.push(scrollButton)
 
-  return newContents;
+  return newContents
 }
 
 window.addEventListener('message', (event) => {
-  if (event.origin !== '{{coralRootUrl}}')
-    return;
+  if (event.origin !== '{{coralRootUrl}}') return
 
   if (event.data.event_name === 'START_LOADING') {
     showLoadingAnimation('Loading')
@@ -1070,45 +1129,55 @@ window.addEventListener('message', (event) => {
 
   if (event.data.event_name === 'START_HIGHLIGHT_COMMENT') {
     showLoadingAnimation('Highlighting comment', function () {
-
       let commentFromIframe = event.data.comment
-      let validComment = [{
-        key: 'comment_id',
-        value: commentFromIframe.comment_id
-      }, {
-        key: 'author_id',
-        value: authorCommentId
-      }]
+      let validComment = [
+        {
+          key: 'comment_id',
+          value: commentFromIframe.comment_id,
+        },
+        {
+          key: 'author_id',
+          value: authorCommentId,
+        },
+      ]
 
       // Poll for highlighted comment
-      const pollCheckInterval = setInterval(() => pollForSavedContent(`/data/chosen/${slug}.json`, validComment, 'objEq', (commentFromServer) => {
-        clearAllPolls()
-        let nextContents = checkHighlightedComment(commentFromServer, commentFromIframe);
-        transitionWidget(nextContents);
-        getHighlightedComment();
-
-      }, function (error) {
-        handleLookupError(`There has been an error highlighting the comment. Please refresh the page and try again, making sure you logged in as the article author.`, error)
-      }), 1000);
+      const pollCheckInterval = setInterval(
+        () =>
+          pollForSavedContent(
+            `/data/chosen/${slug}.json`,
+            validComment,
+            'objEq',
+            (commentFromServer) => {
+              clearAllPolls()
+              let nextContents = checkHighlightedComment(commentFromServer, commentFromIframe)
+              transitionWidget(nextContents)
+              getHighlightedComment()
+            },
+            function (error) {
+              handleLookupError(
+                `There has been an error highlighting the comment. Please refresh the page and try again, making sure you logged in as the article author.`,
+                error
+              )
+            }
+          ),
+        1000
+      )
       pollListeners.push(pollCheckInterval)
-
     })
   }
-
 })
 
-
-if ("IntersectionObserver" in window) {
-
+if ('IntersectionObserver' in window) {
   const lazyOptions = {
     root: null,
-    threshold: 0
+    threshold: 0,
   }
 
   const observer = new window.IntersectionObserver(([entry]) => {
     if (entry.isIntersecting) {
       showWidget()
-      panelSeen = true;
+      panelSeen = true
       return
     }
     if (entry.boundingClientRect.top > 0) {
@@ -1117,11 +1186,9 @@ if ("IntersectionObserver" in window) {
       } else {
         hideWidget()
       }
-
     } else {
       showWidget()
     }
-
   }, lazyOptions)
 
   observer.observe(document.querySelector('.comment-section .section-heading'))

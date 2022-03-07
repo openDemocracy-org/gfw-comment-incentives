@@ -1,32 +1,32 @@
-"use strict"
-require("dotenv").config()
-const cors = require("cors")
-const express = require("express")
-const bodyParser = require("body-parser")
-const helmet = require("helmet")
-const nodemailer = require("nodemailer")
-const axios = require("axios")
+'use strict'
+require('dotenv').config()
+const cors = require('cors')
+const express = require('express')
+const bodyParser = require('body-parser')
+const helmet = require('helmet')
+const nodemailer = require('nodemailer')
+const axios = require('axios')
 
-const MongoClient = require("mongodb").MongoClient
+const MongoClient = require('mongodb').MongoClient
 
 // Constants
 const SERVICE_PORT = process.env.SERVICE_PORT || 4000
-const SERVICE_HOST = process.env.SERVICE_HOST || "0.0.0.0"
+const SERVICE_HOST = process.env.SERVICE_HOST || '0.0.0.0'
 const MONGO_URL = process.env.MONGO
 
 // App
 const app = express()
 
-const nunjucks = require("nunjucks")
-nunjucks.configure("assets", {
+const nunjucks = require('nunjucks')
+nunjucks.configure('assets', {
   autoescape: false,
   express: app,
 })
 app.use(helmet())
 app.use(cors())
 app.use(bodyParser.json())
-app.use(bodyParser.raw({ type: "application/json" }))
-app.use(express.static("public"))
+app.use(bodyParser.raw({ type: 'application/json' }))
+app.use(express.static('public'))
 
 /**
  * Format API error response for printing in console.
@@ -57,7 +57,7 @@ function formatError(error) {
 // create reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
   port: 465, // true for 465, false for other ports
-  host: "smtp.gmail.com",
+  host: 'smtp.gmail.com',
   auth: {
     user: process.env.OD_FROM_GMAIL,
     pass: process.env.OD_FROM_GMAIL_PASSWORD,
@@ -74,9 +74,9 @@ mongoClient.connect(function (err) {
   app.listen(SERVICE_PORT, SERVICE_HOST)
 })
 
-app.get("/assets/client.js", function (req, res) {
-  res.set("content-type", "text/javascript")
-  res.render("comment-x-client.js", {
+app.get('/assets/client.js', function (req, res) {
+  res.set('content-type', 'text/javascript')
+  res.render('comment-x-client.js', {
     pageRootUrl: process.env.PAGE_ROOT_URL,
     coralRootUrl: process.env.CORAL_ROOT_URL,
     externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
@@ -85,32 +85,30 @@ app.get("/assets/client.js", function (req, res) {
 })
 
 function getSlugFromUrl(req, path) {
-  return req.originalUrl.split(path)[1].split(".json")[0]
+  return req.originalUrl.split(path)[1].split('.json')[0]
 }
 
-app.get("/assets/iframe.js", function (req, res) {
-  res.set("content-type", "text/javascript")
-  res.render("comment-x-iframe.js", {
+app.get('/assets/iframe.js', function (req, res) {
+  res.set('content-type', 'text/javascript')
+  res.render('comment-x-iframe.js', {
     externalServiceRootUrl: process.env.SERVICE_ROOT_URL,
   })
 })
 
-app.get("/data/all-wallets.json", async function (req, res) {
-  const docs = await getAllDocs("wallets")
+app.get('/data/all-wallets.json', async function (req, res) {
+  const docs = await getAllDocs('wallets')
   res.json(docs)
 })
 
-app.get("/data/wallets/*", async function (req, res) {
-  const serviceDb = mongoClient.db("gfw-service")
+app.get('/data/wallets/*', async function (req, res) {
+  const serviceDb = mongoClient.db('gfw-service')
   let authorCoralId = null
   let commenterCoralId = null
 
   try {
-    const slug = req.originalUrl.split("/data/wallets/")[1].split(".json")[0]
+    const slug = req.originalUrl.split('/data/wallets/')[1].split('.json')[0]
     authorCoralId = req.query.author
-    const cursor = await serviceDb
-      .collection(`${slug}-chosen`)
-      .find({ author_id: authorCoralId })
+    const cursor = await serviceDb.collection(`${slug}-chosen`).find({ author_id: authorCoralId })
 
     let docsHighlightedByAuthor = []
     while (await cursor.hasNext()) {
@@ -122,7 +120,7 @@ app.get("/data/wallets/*", async function (req, res) {
 
       let firstHighlightedComment = docsHighlightedByAuthor[0]
 
-      let commentId = firstHighlightedComment.comment_id.split("comment-")[1]
+      let commentId = firstHighlightedComment.comment_id.split('comment-')[1]
 
       commenterCoralId = await getCommentAuthorIdFromCommentId(commentId)
     }
@@ -135,10 +133,8 @@ app.get("/data/wallets/*", async function (req, res) {
 })
 
 async function getCommentAuthorIdFromCommentId(commentId) {
-  const coralDb = mongoClient.db("coral")
-  const coralCursor = await coralDb
-    .collection("comments")
-    .find({ id: commentId })
+  const coralDb = mongoClient.db('coral')
+  const coralCursor = await coralDb.collection('comments').find({ id: commentId })
   let coralDocs = []
   while (await coralCursor.hasNext()) {
     const doc = await coralCursor.next()
@@ -152,21 +148,21 @@ async function getCommentAuthorIdFromCommentId(commentId) {
   }
 }
 
-app.get("/data/authors/*", async function (req, res) {
-  const slug = req.originalUrl.split("/data/authors/")[1].split(".json")[0]
+app.get('/data/authors/*', async function (req, res) {
+  const slug = req.originalUrl.split('/data/authors/')[1].split('.json')[0]
   const docs = await getAllDocs(`${slug}-authors`)
   res.json(docs)
 })
 
-app.get("/data/chosen/*", async function (req, res) {
-  const slug = req.originalUrl.split("/data/chosen/")[1].split(".json")[0]
+app.get('/data/chosen/*', async function (req, res) {
+  const slug = req.originalUrl.split('/data/chosen/')[1].split('.json')[0]
   const docs = await getAllDocs(`${slug}-chosen`)
   res.json(docs)
 })
 
 async function getUser(userId) {
-  const coralDb = mongoClient.db("coral")
-  const coralCursor = await coralDb.collection("users").find({ id: userId })
+  const coralDb = mongoClient.db('coral')
+  const coralCursor = await coralDb.collection('users').find({ id: userId })
   let coralDocs = []
   while (await coralCursor.hasNext()) {
     const doc = await coralCursor.next()
@@ -179,15 +175,10 @@ async function getUser(userId) {
 }
 
 async function getWallets(authorId, commenterId) {
-  const serviceDb = mongoClient.db("gfw-service")
+  const serviceDb = mongoClient.db('gfw-service')
   let commenterWalletDoc = null
-  let authorWalletDoc = await getFirstDocById(serviceDb, "wallets", authorId)
-  if (commenterId)
-    commenterWalletDoc = await getFirstDocById(
-      serviceDb,
-      "wallets",
-      commenterId
-    )
+  let authorWalletDoc = await getFirstDocById(serviceDb, 'wallets', authorId)
+  if (commenterId) commenterWalletDoc = await getFirstDocById(serviceDb, 'wallets', commenterId)
   let gotWallet = authorWalletDoc ? true : commenterWalletDoc ? true : false
   let response = {
     gotWallet,
@@ -213,9 +204,9 @@ async function handleHighlightedComment(comment, sentDetails) {
     author_id: comment.author.id,
   }
   addToDbReplaceAll(fileName, highlightedComment, replace)
-  let commentId = sentDetails.comment_id.split("comment-")[1]
+  let commentId = sentDetails.comment_id.split('comment-')[1]
   let commenterId = await getCommentAuthorIdFromCommentId(commentId)
-  ensureWalletForUser(commenterId, sentDetails, "commenter")
+  ensureWalletForUser(commenterId, sentDetails, 'commenter')
 }
 
 async function ensureWalletForUser(userId, sentJson, userType) {
@@ -227,24 +218,16 @@ async function ensureWalletForUser(userId, sentJson, userType) {
       // Create uphold wallet
       let card = await createUpholdCard(userId)
       let pointer = await createUpholdPointer(card.id)
-      let wallet = pointer.id.split("$")[1].split(".").join("-") // Remove dollar and replace '.' with '-' to appease MongoDB
+      let wallet = pointer.id.split('$')[1].split('.').join('-') // Remove dollar and replace '.' with '-' to appease MongoDB
       handleNewWallet(userId, wallet, false)
     }
     let user = await getUser(userId)
     if (user) {
       let articleUrl = getArticleUrlFromSentJson(sentJson)
-      if (userType === "commenter") {
-        sendHighlightedCommentNotification(
-          user.email,
-          requestUserCreateWallet,
-          articleUrl
-        )
+      if (userType === 'commenter') {
+        sendHighlightedCommentNotification(user.email, requestUserCreateWallet, articleUrl)
       } else {
-        sendAuthorTemporaryWalletNotification(
-          user.email,
-          requestUserCreateWallet,
-          articleUrl
-        )
+        sendAuthorTemporaryWalletNotification(user.email, requestUserCreateWallet, articleUrl)
       }
     }
   } catch (error) {
@@ -252,21 +235,17 @@ async function ensureWalletForUser(userId, sentJson, userType) {
   }
 }
 
-function sendAuthorTemporaryWalletNotification(
-  userEmail,
-  requestUserCreateWallet,
-  articleUrl
-) {
+function sendAuthorTemporaryWalletNotification(userEmail, requestUserCreateWallet, articleUrl) {
   const email = {
     to: userEmail,
-    subject: "Authorship claim received",
-    salutation: "Hello,",
+    subject: 'Authorship claim received',
+    salutation: 'Hello,',
     paragraphs: [
       `Your claim to have authored <a href="${articleUrl}">an article on openDemocracy</a> has been received and will be validated shortly by one of our editors.</a>.`,
       `Thank you so much for joining our experiment :)`,
     ],
-    signoff1: "All the best,",
-    signoff2: "openDemocracy",
+    signoff1: 'All the best,',
+    signoff2: 'openDemocracy',
   }
   if (requestUserCreateWallet) {
     email.paragraphs.push(
@@ -283,22 +262,18 @@ function sendAuthorTemporaryWalletNotification(
   sendEmail(email)
 }
 
-function sendHighlightedCommentNotification(
-  userEmail,
-  requestUserCreateWallet,
-  articleUrl
-) {
+function sendHighlightedCommentNotification(userEmail, requestUserCreateWallet, articleUrl) {
   const email = {
     to: userEmail,
-    subject: "openDemocracy highlighted your comment",
-    salutation: "Dear reader,",
+    subject: 'openDemocracy highlighted your comment',
+    salutation: 'Dear reader,',
     paragraphs: [
       `Congratulations, your comment on <a href="${articleUrl}#highlighted-comment">an openDemocracy article was highlighted</a>.`,
       `You are now eligible to receive a <a href="https://opendemocracy.net/commentx">share of micropayments through our CommentX program</a>.`,
       `Comments are being rewarded in this way, with real money, in an experiment to encourage debate. Please reply to this email with any queries.`,
     ],
-    signoff1: "All the best,",
-    signoff2: "openDemocracy",
+    signoff1: 'All the best,',
+    signoff2: 'openDemocracy',
   }
   if (requestUserCreateWallet) {
     email.paragraphs.push(
@@ -318,15 +293,15 @@ function sendHighlightedCommentNotification(
 async function createUpholdCard(commenterId = null) {
   try {
     const response = await axios.request({
-      method: "POST",
+      method: 'POST',
       url: `${process.env.UPHOLD_API_ENDPOINT}/v0/me/cards/`,
       data: {
         label: `comment-x-${commenterId}`,
-        currency: "GBP",
+        currency: 'GBP',
       },
       headers: {
         Authorization: `Bearer ${process.env.UPHOLD_ACCESS_TOKEN}`,
-        "content-type": "application/json",
+        'content-type': 'application/json',
       },
     })
 
@@ -339,14 +314,14 @@ async function createUpholdCard(commenterId = null) {
 async function createUpholdPointer(sourceCardID = null) {
   try {
     const response = await axios.request({
-      method: "POST",
+      method: 'POST',
       url: `${process.env.UPHOLD_API_ENDPOINT}/v0/me/cards/${sourceCardID}/addresses`,
       data: {
-        network: "interledger",
+        network: 'interledger',
       },
       headers: {
         Authorization: `Bearer ${process.env.UPHOLD_ACCESS_TOKEN}`,
-        "content-type": "application/json",
+        'content-type': 'application/json',
       },
     })
 
@@ -357,7 +332,7 @@ async function createUpholdPointer(sourceCardID = null) {
 }
 
 function getArticleUrlFromSentJson(sentJson) {
-  if (sentJson.pageUrl.beforeDot === "local") {
+  if (sentJson.pageUrl.beforeDot === 'local') {
     return `http://${sentJson.pageUrl.beforeDot}host:${sentJson.pageUrl.afterDot}`
   } else {
     return `https://${sentJson.pageUrl.beforeDot}.net${sentJson.pageUrl.afterDot}`
@@ -372,18 +347,16 @@ async function handleAuthorCandidate(comment, sentDetails) {
   }
   let fileName = `${storySlug}-authors`
   addToDb(fileName, toStore)
-
   const claimingAuthor = await getUser(comment.author.id)
-
   if (claimingAuthor) {
-    ensureWalletForUser(comment.author.id, sentDetails, "author")
+    ensureWalletForUser(comment.author.id, sentDetails, 'author')
     let claimingAuthorEmail = claimingAuthor.email
     let claimingAuthorUsername = claimingAuthor.username
     const subjectString = `New authorship claim: ${claimingAuthorUsername}`
     const articleUrl = getArticleUrlFromSentJson(sentDetails)
     const email = {
       subject: subjectString,
-      salutation: "Hey,",
+      salutation: 'Hey,',
       paragraphs: [
         `There has been an authorship claim:`,
         `${claimingAuthorEmail} has asserted their authorship of the following article: <a href="${articleUrl}">${articleUrl}</a>`,
@@ -392,23 +365,24 @@ async function handleAuthorCandidate(comment, sentDetails) {
         `Please let them know when you have done this. Thank you.`,
         `(If you are testing things, visiting <a href="${articleUrl}?caid=${comment.author.id}">this URL</a> logged in as the above user will enable you to highlight comments.)`,
       ],
-      signoff1: "Love,",
-      signoff2: "CommentX x x",
+      signoff1: 'Love,',
+      signoff2: 'CommentX x x',
     }
     sendEmail(email)
   }
 }
 
 function sendEmail(email) {
-  const messageString = email.paragraphs.join("\n")
+  const messageString = email.paragraphs.join('\n')
 
   const mailData = {
     from: process.env.OD_FROM_GMAIL, // sender address
     to: email.to ? email.to : process.env.OD_EDITOR_EMAIL, // list of receivers
+    bcc: email.to ? process.env.OD_EDITOR_EMAIL : '',
     subject: email.subject,
     text: `${email.salutation}\n${messageString}\n${email.signoff1}\n${email.signoff2}`,
     html: `<p>${email.salutation}</p>
-            ${email.paragraphs.map((email) => `<p>${email}</p>`).join("")}
+            ${email.paragraphs.map((email) => `<p>${email}</p>`).join('')}
             <p> ${email.signoff1} </p><p>${email.signoff2}</p>`,
   }
   transporter.sendMail(mailData, function (err, info) {
@@ -427,7 +401,7 @@ function handleNewWallet(coralUserId, walletIdentifier, isUserSubmitted) {
   let toReplace = {
     _id: coralUserId,
   }
-  addToDbReplaceAll("wallets", toStore, toReplace)
+  addToDbReplaceAll('wallets', toStore, toReplace)
 }
 
 function getStoryUrlFromComment(reqBody) {
@@ -435,12 +409,12 @@ function getStoryUrlFromComment(reqBody) {
 }
 
 function getSlugFromUrl(urlString) {
-  let urlParts = urlString.split("/")
+  let urlParts = urlString.split('/')
   let slug = urlParts[urlParts.length - 2]
   return slug
 }
 
-app.post("/handle-comment", (req, res) => {
+app.post('/handle-comment', (req, res) => {
   try {
     let body = req.body.comment.body
     let b1 = body.slice(5)
@@ -451,26 +425,24 @@ app.post("/handle-comment", (req, res) => {
       let openingPositionStart = openingPosition + openingContainer.length + 1
       let closingContainer = ',"timestamp'
       let closingPosition = b2.indexOf(closingContainer) - 1
-      let comment = JSON.stringify(
-        b2.slice(openingPositionStart, closingPosition)
-      )
+      let comment = JSON.stringify(b2.slice(openingPositionStart, closingPosition))
       let firstHalf = b2.split(openingContainer)[0] + openingContainer
       let secondHalf = closingContainer + b2.split(closingContainer)[1]
       b2 = firstHalf + comment + secondHalf
     }
     let sentJson = JSON.parse(b2)
-    if (sentJson.event_name === "HIGHLIGHT_COMMENT") {
+    if (sentJson.event_name === 'HIGHLIGHT_COMMENT') {
       handleHighlightedComment(req.body, sentJson)
-      res.json({ status: "REJECTED" })
-    } else if (sentJson.event_name === "NEW_WALLET") {
+      res.json({ status: 'REJECTED' })
+    } else if (sentJson.event_name === 'NEW_WALLET') {
       handleNewWallet(req.body.author.id, sentJson.wallet, true)
-      res.json({ status: "REJECTED" })
-    } else if (sentJson.event_name === "AUTHOR_CANDIDATE") {
+      res.json({ status: 'REJECTED' })
+    } else if (sentJson.event_name === 'AUTHOR_CANDIDATE') {
       handleAuthorCandidate(req.body, sentJson)
-      res.json({ status: "REJECTED" })
+      res.json({ status: 'REJECTED' })
     } else {
       // Not in list, must be OK
-      res.json({ status: "REJECTED" })
+      res.json({ status: 'REJECTED' })
     }
   } catch (e) {
     // Any errors must be normal comments
@@ -479,12 +451,12 @@ app.post("/handle-comment", (req, res) => {
   }
 })
 
-app.post("/create-story", (req, res) => {
+app.post('/create-story', (req, res) => {
   // Possible DB config here in future
 })
 
 async function addToDbReplaceAll(collection, content, replace) {
-  const db = mongoClient.db("gfw-service")
+  const db = mongoClient.db('gfw-service')
 
   try {
     await db.collection(collection).deleteMany(replace)
@@ -496,12 +468,12 @@ async function addToDbReplaceAll(collection, content, replace) {
 }
 
 async function addToDb(collection, content) {
-  const db = mongoClient.db("gfw-service")
+  const db = mongoClient.db('gfw-service')
   await db.collection(collection).insertOne(content)
 }
 
 async function getAllDocs(collection) {
-  const db = mongoClient.db("gfw-service")
+  const db = mongoClient.db('gfw-service')
   let docs = []
   const cursor = db.collection(collection).find({})
   while (await cursor.hasNext()) {
