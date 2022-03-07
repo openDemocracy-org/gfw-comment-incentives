@@ -735,7 +735,7 @@ function initDisplayWidget() {
   let state = getState()
   if (state) {
     if (state.loggedIn) {
-      gfwGotSignedInUser(state)
+      gfwGotSignedInUser({})
     }
   }
   insertContent()
