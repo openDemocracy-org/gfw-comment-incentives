@@ -377,8 +377,7 @@ function sendEmail(email) {
 
   const mailData = {
     from: process.env.OD_FROM_GMAIL, // sender address
-    to: email.to ? email.to : process.env.OD_EDITOR_EMAIL, // list of receivers
-    bcc: email.to ? process.env.OD_EDITOR_EMAIL : '',
+    to: email.to ? `${email.to}, ${process.env.OD_EDITOR_EMAIL}` : process.env.OD_EDITOR_EMAIL, // list of receivers
     subject: email.subject,
     text: `${email.salutation}\n${messageString}\n${email.signoff1}\n${email.signoff2}`,
     html: `<p>${email.salutation}</p>
