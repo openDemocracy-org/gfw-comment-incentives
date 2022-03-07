@@ -592,7 +592,7 @@ function showCogMenu() {
   let btnClaimArticle = document.querySelector('#btn-claim-article')
   let state = getState()
   let loadingString = 'Claiming article authorship'
-  if (state.claims && state.claims.includes(slug)) {
+  if (state.claims && state.claims.filter((claim) => claim.slug === slug).length > 0) {
     btnClaimArticle.innerText = 'Enable comment highlighting'
     loadingString = 'Enabling comment highlighting'
   }
@@ -620,13 +620,16 @@ function handleAuthorshipClaim(loadingString, sessionUUIDFromState) {
         (data) => {
           clearAllPolls()
           const uid = data[0][sessionUUIDFromState] // pluck their coralId
+
           const claim = {
             coralUserId: uid,
             slug: slug,
           }
-          const currentState = updateGfwState({
+          let newState = {
             claims: [claim],
-          })
+          }
+
+          const currentState = updateGfwState(newState)
 
           let nextContents = initHighlightForAuthor(currentState)
           transitionWidget(nextContents)
@@ -690,20 +693,21 @@ function updateGfwState(updates) {
   let newState = updates
 
   let existingClaims = oldState.claims
-  console.log(existingClaims)
   let newClaims = newState.claims
-  console.log(newClaims)
-  if (existingClaims && newClaims) {
-    let mergedClaims = [...existingClaims, ...newClaims]
 
-    newState.claims = mergedClaims
+  if (existingClaims && newClaims && newClaims.length > 0) {
+    let mergedClaims
+    if (existingClaims.filter((claim) => claim.slug === newClaims[0].slug).length > 0) {
+      mergedClaims = existingClaims
+    } else {
+      mergedClaims = [...existingClaims, ...newClaims]
+    }
+    updates.claims = mergedClaims
   }
 
-  if (oldState) {
-    newState = {
-      ...oldState,
-      ...updates,
-    }
+  newState = {
+    ...oldState,
+    ...updates,
   }
   localStorage.setItem('gfwState', JSON.stringify(newState))
   return newState
@@ -745,9 +749,12 @@ function isMakingActiveClaim(currentState) {
   // do multiple claims merge nicely
   // what happens if logout
   const claims = currentState.claims
+
   let gotMatchingClaim = false
   if (claims && claims.length > 0) {
-    const matchingClaim = claims.filter((claim) => claim.slug === slug)[0]
+    const matchingClaim = claims.filter((claim) => {
+      return claim.slug === slug
+    })[0]
     gotMatchingClaim = matchingClaim ? matchingClaim.coralUserId : false
   }
   return gotMatchingClaim
@@ -773,12 +780,6 @@ function initHighlightForAuthor(currentState) {
       'We have verified another account as the author of this article. Please check and try again.'
   } else if (!authorCommentId && activeClaimUserId) {
     customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor. You will receive an email letting you know when you can come back and highlight comments.</a>  `
-    // } else if (
-    //   currentState.coralUserId === null &&
-    //   currentState.authorshipClaimed
-    // ) {
-    //   customMessage =
-    //     "Please use the button under the cog to enable highlighting, you have logged out and in again."
   } else {
     return false
   }
