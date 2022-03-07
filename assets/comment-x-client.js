@@ -768,7 +768,7 @@ function initHighlightForAuthor(currentState) {
       postMessage(message)
     })
     handleCoralReady()
-  } else if (authorCommentId && authorCommentId !== activeClaimUserId) {
+  } else if (authorCommentId && activeClaimUserId && authorCommentId !== activeClaimUserId) {
     customMessage =
       'We have verified another account as the author of this article. Please check and try again.'
   } else if (!authorCommentId && activeClaimUserId) {
