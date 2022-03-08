@@ -777,7 +777,7 @@ function initHighlightForAuthor(currentState) {
     handleCoralReady()
   } else if (authorCommentId && activeClaimUserId && authorCommentId !== activeClaimUserId) {
     customMessage =
-      'We have verified another account as the author of this article. Please check and try again.'
+      'Your claim has been received but we have verified another account as the author of this article. Please speak to your editor letting them know you got this message.'
   } else if (!authorCommentId && activeClaimUserId) {
     customMessage = `Your authorship claim has been received and will shortly be confirmed by an openDemocracy editor. You will receive an email letting you know when you can come back and highlight comments.</a>  `
   } else {
