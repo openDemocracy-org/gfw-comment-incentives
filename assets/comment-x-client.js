@@ -636,7 +636,7 @@ function handleAuthorshipClaim(loadingString, sessionUUIDFromState) {
         },
         function (error) {
           handleLookupError(
-            `There has been an error retrieving your CoralID. Please refresh the page and try again, making sure you are not logged in as a Coral editor, moderator or admin.`,
+            `Unable to verify your claim due to comment plugin throttling. Please try again using the cog; you may need to try again and again but please just keep pressing the button until it works.`,
             error
           )
         }
@@ -1157,7 +1157,7 @@ window.addEventListener('message', (event) => {
             },
             function (error) {
               handleLookupError(
-                `Unable to verify your claim due to comment plugin throttling. Please try again using the cog; you may need to try again and again but please just keep pressing the button until it works.`,
+                `There has been an error highlighting the comment. Please refresh the page and try again, making sure you logged in as the article author.`,
                 error
               )
             }
