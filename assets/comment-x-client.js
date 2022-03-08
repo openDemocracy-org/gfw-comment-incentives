@@ -636,7 +636,7 @@ function handleAuthorshipClaim(loadingString, sessionUUIDFromState) {
         },
         function (error) {
           handleLookupError(
-            `Unable to verify your claim due to comment plugin throttling. Please try again using the cog; you may need to try again and again but please just keep pressing the button until it works.`,
+            `Unable to verify your claim due to comment plugin throttling. Please try again using the cog; you may need to try again and again but please just keep pressing the button until it works. (Please also make sure you are logged in to Coral.)`,
             error
           )
         }
