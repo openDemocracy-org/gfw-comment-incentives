@@ -7,6 +7,9 @@ const helmet = require('helmet')
 const nodemailer = require('nodemailer')
 const axios = require('axios')
 
+// START Templating code just for reports
+const slashes = require('connect-slashes')
+
 const MongoClient = require('mongodb').MongoClient
 
 // Constants
@@ -18,10 +21,11 @@ const MONGO_URL = process.env.MONGO
 const app = express()
 
 const nunjucks = require('nunjucks')
-nunjucks.configure('assets', {
+nunjucks.configure(['assets', 'views'], {
   autoescape: false,
   express: app,
 })
+
 app.use(helmet())
 app.use(cors())
 app.use(bodyParser.json())
@@ -72,6 +76,15 @@ mongoClient.connect(function (err) {
   if (err) throw err
   // Start the application after the database connection is ready
   app.listen(SERVICE_PORT, SERVICE_HOST)
+})
+
+app.get('/reporting/', slashes(), function (req, res) {
+  res.render('reporting.html')
+})
+
+app.get('/assets/reporting.js', async function (req, res) {
+  res.set('content-type', 'text/javascript')
+  res.render('comment-x-reporting.js')
 })
 
 app.get('/assets/client.js', function (req, res) {
@@ -158,6 +171,85 @@ app.get('/data/chosen/*', async function (req, res) {
   const slug = req.originalUrl.split('/data/chosen/')[1].split('.json')[0]
   const docs = await getAllDocs(`${slug}-chosen`)
   res.json(docs)
+})
+
+async function toArray(iterator) {
+  return new Promise((resolve, reject) => {
+    iterator.toArray((err, res) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(res)
+      }
+    })
+  })
+}
+
+function walletRecordForCommentId(coralId, cards) {
+  const resp = {
+    coralUser: coralId,
+  }
+  const card = cards.filter((c) => c.label === `comment-x-${coralId}`)
+  if (card.length > 0) {
+    resp.card = {
+      balance: card[0].normalized[0].balance,
+      currency: card[0].normalized[0].currency,
+      id: card[0].id,
+      label: card[0].label,
+    }
+  }
+
+  return resp
+}
+
+app.get('/data/all-comment-x.json', async function (req, res) {
+  let cards = await listUpholdCards()
+
+  const serviceDb = mongoClient.db('gfw-service')
+  const allCollections = await toArray(serviceDb.listCollections())
+  const collectionsWithAuthors = allCollections.filter((collection) =>
+    collection.name.includes('-authors')
+  )
+  const collectionsWithChosen = allCollections.filter((collection) =>
+    collection.name.includes('-chosen')
+  )
+  const activeCollections = collectionsWithAuthors.map((collection) => {
+    const slug = collection.name.split('-authors')[0]
+    return {
+      slug: slug,
+      commenters: collectionsWithChosen.filter((c) => c.name.split('-chosen')[0] === slug),
+    }
+  })
+  const activeCollectionsWithAuthors = await Promise.all(
+    activeCollections.map(async (collection) => {
+      // Get authors
+      const docs = await getAllDocs(`${collection.slug}-authors`)
+      const authorCoralIds = docs.map((doc) => Object.values(doc)[1])
+      const uniqueAuthorCoralIds = authorCoralIds.filter((cid, i, self) => self.indexOf(cid) === i)
+      const authorWalletRecords = uniqueAuthorCoralIds.map((cid) =>
+        walletRecordForCommentId(cid, cards)
+      )
+      collection.authors = authorWalletRecords
+
+      if (collection.commenters.length > 0) {
+        // Get commenters
+        const cDocs = await getAllDocs(`${collection.slug}-chosen`)
+        const comments = await Promise.all(
+          cDocs.map(async (comment) => {
+            const commentId = await getCommentAuthorIdFromCommentId(
+              comment.comment_id.split('comment-')[1]
+            )
+            return walletRecordForCommentId(commentId, cards)
+          })
+        )
+        collection.commenters = comments
+      }
+
+      return collection
+    })
+  )
+
+  res.json(activeCollectionsWithAuthors)
 })
 
 async function getUser(userId) {
@@ -288,6 +380,23 @@ function sendHighlightedCommentNotification(userEmail, requestUserCreateWallet, 
     )
   }
   sendEmail(email)
+}
+
+async function listUpholdCards() {
+  try {
+    const response = await axios.request({
+      method: 'GET',
+      url: `${process.env.UPHOLD_API_ENDPOINT}/v0/me/cards/`,
+      headers: {
+        Authorization: `Bearer ${process.env.UPHOLD_ACCESS_TOKEN}`,
+        'content-type': 'application/json',
+      },
+    })
+
+    return response.data
+  } catch (error) {
+    formatError(error)
+  }
 }
 
 async function createUpholdCard(commenterId = null) {
