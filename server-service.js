@@ -202,6 +202,30 @@ function walletRecordForCommentId(coralId, cards) {
   return resp
 }
 
+async function getNamesFromIds(records) {
+  const listWithNames = await Promise.all(
+    records.map(async (record) => {
+      const user = await getUser(record.coralUser)
+      record.username = user.username
+      return record
+    })
+  )
+  return listWithNames
+}
+
+async function getUserSubmittedWallets(records, db) {
+  const recordsWithUserWallets = await Promise.all(
+    records.map(async (record) => {
+      const doc = await getFirstDocById(db, 'wallets', record.coralUser)
+      if (doc && doc.isUserSubmitted) {
+        record.gotUserSubmittedWallet = true
+      }
+      return record
+    })
+  )
+  return recordsWithUserWallets
+}
+
 app.get('/data/all-comment-x.json', async function (req, res) {
   let cards = await listUpholdCards()
 
@@ -220,7 +244,7 @@ app.get('/data/all-comment-x.json', async function (req, res) {
       commenters: collectionsWithChosen.filter((c) => c.name.split('-chosen')[0] === slug),
     }
   })
-  const activeCollectionsWithAuthors = await Promise.all(
+  const activeCollectionsWithAuthorsAndCommenters = await Promise.all(
     activeCollections.map(async (collection) => {
       // Get authors
       const docs = await getAllDocs(`${collection.slug}-authors`)
@@ -229,27 +253,41 @@ app.get('/data/all-comment-x.json', async function (req, res) {
       const authorWalletRecords = uniqueAuthorCoralIds.map((cid) =>
         walletRecordForCommentId(cid, cards)
       )
-      collection.authors = authorWalletRecords
+      const authorRecordsWithUsernames = await getNamesFromIds(authorWalletRecords)
+
+      const withWalletsToo = await getUserSubmittedWallets(authorRecordsWithUsernames, serviceDb)
+
+      collection.authors = withWalletsToo
 
       if (collection.commenters.length > 0) {
         // Get commenters
         const cDocs = await getAllDocs(`${collection.slug}-chosen`)
-        const comments = await Promise.all(
+        const commenterWalletRecords = await Promise.all(
           cDocs.map(async (comment) => {
             const commentId = await getCommentAuthorIdFromCommentId(
               comment.comment_id.split('comment-')[1]
             )
-            return walletRecordForCommentId(commentId, cards)
+            const record = walletRecordForCommentId(commentId, cards)
+            record.comment = comment.commenter_comment
+            record.highlighted_by = comment.author_id
+            return record
           })
         )
-        collection.commenters = comments
+        const commenterRecordsWithUsernames = await getNamesFromIds(commenterWalletRecords)
+        const withWalletsToo = await getUserSubmittedWallets(
+          commenterRecordsWithUsernames,
+          serviceDb
+        )
+        collection.commenters = withWalletsToo
       }
+
+      //const collectionWithNames = collection.map()
 
       return collection
     })
   )
 
-  res.json(activeCollectionsWithAuthors)
+  res.json(activeCollectionsWithAuthorsAndCommenters)
 })
 
 async function getUser(userId) {

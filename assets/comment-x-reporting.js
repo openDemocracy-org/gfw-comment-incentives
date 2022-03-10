@@ -23,10 +23,20 @@ function renderTemplate(card) {
   return `
     <article>
       <h3>${card.slug}</h3>
-      ${getUsers(card, 'authors')}
+ 
+
+
       ${getUsers(card, 'commenters')}
+      ${getUsers(card, 'authors')}
     </article>
   `
+}
+
+
+function getHighlightedComment(card) {
+  if (card.commenters.length < 0) return ''
+  // Here we display a nice blockquote
+  // and the commenter card state
 }
 
 function getUsers(card, userType) {
