@@ -1,6 +1,7 @@
 async function getData() {
   try {
     const response = await fetch('/data/all-comment-x.json')
+
     const cards = await response.json()
     renderReport(cards)
   } catch (e) {
@@ -20,52 +21,67 @@ function renderReport(cards) {
 }
 
 function renderTemplate(card) {
+  if (card.slug.length < 10) return '' // remove test slugs from staging
   return `
-    <article>
+    <article class="slug">
       <h3>${card.slug}</h3>
- 
-
-
-      ${getUsers(card, 'commenters')}
-      ${getUsers(card, 'authors')}
+      ${getHighlightedComment(card)}
+      ${getAuthors(card)}
     </article>
   `
 }
 
-
 function getHighlightedComment(card) {
-  if (card.commenters.length < 0) return ''
+  if (card.commenters.length === 0) return '<p>No highlighted comment found</p>'
+  const comments = card.commenters.map((commenter) => {
+    return `
+      <blockquote>${commenter.comment}</blockquote>
+      ${displayUser(commenter, 'h4')}
+    `
+  })
+  return comments
   // Here we display a nice blockquote
   // and the commenter card state
 }
 
-function getUsers(card, userType) {
-  if (card[userType].length > 0)
-    return `
-  <div>
-        <h4>${userType}</h4>
+function getAuthors(card) {
+  const actualAuthor = card.commenters.length > 0 ? card.commenters[0].highlighted_by : null
+  const highlightingAuthor = card.authors.filter((author) => author.coralUser === actualAuthor)
+  const otherAuthors = card.authors.filter((author) => author.coralUser !== actualAuthor)
+  let response = ''
+  if (highlightingAuthor.length > 0) {
+    response += `<p>Highlighted by:</p>`
+    response += `${displayUser(highlightingAuthor[0], 'h4')}`
+  }
+  if (highlightingAuthor.length > 0 && otherAuthors.length > 0) {
+    response += `<p>Other authorship claims:</p>`
+  } else if (otherAuthors.length > 0) {
+    response += '<p>Authors:</p>'
+  }
+  if (otherAuthors.length > 0)
+    response += `
         <ul>
-          ${card[userType].map(displayUser)}
-        </ul>
-      </div>
+          ${otherAuthors.map((user) => {
+            return `<li>${displayUser(user, 'h4')}</li>`
+          })}
+        </ul>      
   `
-  return ''
+  return response
 }
 
-function displayUser(item) {
+function displayUser(item, userTag) {
   let card = ''
   if (item.card) {
-    card = `
-      <dl>
-        <dt>Balance</dt>
-        <dd>${item.card.balance}</dd>
-        <dt>Currency</dt>
-        <dd>${item.card.currency}</dd>
-      </dl>
-    `
+    card = `${item.card.currency === 'GBP' ? '£' : item.card.currency}${item.card.balance}`
+  } else {
+    card = '🚫'
+  }
+
+  if (item.gotUserSubmittedWallet) {
+    card = '💰'
   }
   return `
-    <li>${item.coralUser} ${card}</li>
+    <${userTag} class="user">${item.username} <span class="wallet">${card}</span></${userTag}>
 
   `
 }
