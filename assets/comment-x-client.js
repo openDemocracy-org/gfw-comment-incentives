@@ -963,11 +963,10 @@ async function startRevShare() {
 
         if (authorWallet && commenterWallet) {
           pointers = {
-            [`${odWalletAddress}`]: 45,
-            [`${authorWallet}`]: 45,
-            [`${commenterWallet}`]: 10,
+            [`${authorWallet}`]: 50,
+            [`${commenterWallet}`]: 50,
           }
-          console.log('GFW Got wallets for author and commenter, 45 45 10.')
+          console.log('GFW Got wallets for author and commenter, 50 50 (no oD).')
           console.log(
             `od: ${odWalletAddress}, author: ${authorWallet}, commenter: ${commenterWallet}`
           )
@@ -980,10 +979,9 @@ async function startRevShare() {
           console.log(`od: ${odWalletAddress}, author: ${authorWallet}`)
         } else if (commenterWallet) {
           pointers = {
-            [`${odWalletAddress}`]: 90,
-            [`${commenterWallet}`]: 10,
+            [`${commenterWallet}`]: 100,
           }
-          console.log('GFW Got wallet for commenter, 90 10.')
+          console.log('GFW Got wallet for commenter, 100 (no oD).')
           console.log(`od: ${odWalletAddress}, commenter: ${commenterWallet}`)
         }
         performCalculations(pointers)

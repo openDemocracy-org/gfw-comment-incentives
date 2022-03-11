@@ -407,14 +407,14 @@ function sendHighlightedCommentNotification(userEmail, requestUserCreateWallet, 
   }
   if (requestUserCreateWallet) {
     email.paragraphs.push(
-      `We have created a temporary wallet for you, and this wallet is currently being paid 10% of the page's revenue.`
+      `We have created a temporary wallet for you, and this wallet is currently being paid between 50-100% of the page's revenue.`
     )
     email.paragraphs.push(
       `To add your own wallet, please <a href="${articleUrl}">visit the page</a> and follow the instructions in the Comment widget.`
     )
   } else {
     email.paragraphs.push(
-      `The wallet you submitted is currently being paid 10% of the page's revenue.`
+      `The wallet you submitted is currently being paid between 50-100% of the page's revenue.`
     )
   }
   sendEmail(email)
