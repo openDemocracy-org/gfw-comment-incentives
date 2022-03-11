@@ -21,7 +21,7 @@ function renderReport(cards) {
 }
 
 function renderTemplate(card) {
-  if (card.slug.length < 10) return '' // remove test slugs from staging
+  if (card.slug.length < 13) return '' // remove test slugs from staging
   return `
     <article class="slug">
       <h3>${card.slug}</h3>
