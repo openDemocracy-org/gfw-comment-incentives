@@ -220,6 +220,10 @@ async function getUserSubmittedWallets(records, db) {
       if (doc && doc.isUserSubmitted) {
         record.gotUserSubmittedWallet = true
       }
+      if (doc && !doc.hasOwnProperty('isUserSubmitted')) {
+        // field added with API work, no field must be user-submitted wallet
+        record.gotUserSubmittedWallet = true
+      }
       return record
     })
   )
