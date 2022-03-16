@@ -849,7 +849,7 @@ const highlightedCommentTemplate = (content) => {
         </div>
       </div>
       <div class="related-story-meta">
-        <p>This comment has been highlighted by the article's author and the commenter is enjoying a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit;" class="article-list__title" href="/rewardcomments">Find out more</a></p>
+        <p>This comment has been highlighted for its interesting perspective. The commenter can now receive a small percentage of this page's revenue. <a style="font-size: inherit; color: inherit;" class="article-list__title" href="/rewardcomments">Find out more</a></p>
       </div>
     </div>
   </div>
