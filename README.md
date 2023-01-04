@@ -122,7 +122,7 @@ Add the Coral Talk parent repository as a git remote:
 
 `$ git remote add coral-origin git@github.com:coralproject/talk.git`
 
-Fetch all branches: `$ git fetch`
+Fetch all branches: `$ git fetch --all`
 
 Merge in the latest changes from their production branch:
 
