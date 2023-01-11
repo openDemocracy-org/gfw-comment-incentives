@@ -110,7 +110,7 @@ Run the below manually to generate an access token, and then add this access tok
 
 ### Updating
 
-Clone our forked version of Coral Talk.
+Clone [our forked version of Coral Talk](https://github.com/openDemocracy-org/talk).
 
 Use branch `main` for `production` and `od-staging-main` for `staging`.
 
